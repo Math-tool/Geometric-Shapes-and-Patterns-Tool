@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أداة الأشكال الهندسية والأنماط</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Use Cairo font for Arabic text */
+        body, button, input, label, select, textarea {
+            font-family: 'Cairo', sans-serif;
+        }
+        /* Prevent text selection during drag */
+        body {
+            user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
+            overflow: hidden; /* Prevent scrolling */
+        }
+        /* Style for draggable shapes in the palette */
+        .shape-template {
+            cursor: grab; border: 1px solid #ccc; background-color: #f0f0f0;
+            display: flex; justify-content: center; align-items: center;
+            width: 60px; height: 60px; margin: 5px; border-radius: 4px;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.1); transition: background-color 0.2s;
+        }
+        .shape-template:hover { background-color: #e0e0e0; }
+        .shape-template svg { width: 70%; height: 70%; pointer-events: none; }
+
+        /* Style for the main canvas */
+        canvas { border: 1px solid #cbd5e1; background-color: #ffffff; cursor: default; touch-action: none; }
+
+        /* Style for resize handles */
+        .resize-handle {
+            position: absolute; width: 12px; height: 12px;
+            background-color: #3182ce; border: 1px solid white; border-radius: 50%;
+            cursor: grab; box-shadow: 0 0 3px rgba(0,0,0,0.6); z-index: 10;
+        }
+        /* Specific cursors for different handles */
+        .resize-handle.nw, .resize-handle.vertex-0 { cursor: nwse-resize; }
+        .resize-handle.ne, .resize-handle.vertex-1 { cursor: nesw-resize; }
+        .resize-handle.sw, .resize-handle.vertex-3 { cursor: nesw-resize; }
+        .resize-handle.se, .resize-handle.vertex-2 { cursor: nwse-resize; }
+        .resize-handle.n { cursor: ns-resize; }
+        .resize-handle.s { cursor: ns-resize; }
+        .resize-handle.w { cursor: ew-resize; }
+        .resize-handle.e { cursor: ew-resize; } /* Also for circle, rhombus, parallelogram */
+
+        /* Style for calculation display */
+        #calculation-display {
+            min-height: 100px; font-size: 0.9rem; direction: ltr;
+            text-align: right; unicode-bidi: embed;
+        }
+        #calculation-display span { display: block; margin-bottom: 4px; }
+
+        /* Pattern Box Styles */
+        #pattern-box {
+             background-color: #e2e8f0; /* cool-gray-200 */
+             border-top: 2px solid #cbd5e1; /* cool-gray-300 */
+             padding: 10px;
+             display: flex;
+             justify-content: center;
+             align-items: center;
+             gap: 10px;
+             min-height: 90px; /* Ensure it has some height */
+             flex-wrap: wrap; /* Allow wrapping on small screens */
+        }
+        .pattern-slot {
+            width: 65px; height: 65px;
+            border: 2px dashed #a0aec0; /* cool-gray-400 */
+            background-color: #f7fafc; /* cool-gray-50 */
+            display: flex; justify-content: center; align-items: center;
+            border-radius: 4px;
+            position: relative; /* For potential clear button */
+            transition: background-color 0.2s;
+        }
+        .pattern-slot.over { /* Style when dragging over */
+             background-color: #bee3f8; /* blue-200 */
+             border-style: solid;
+        }
+        .pattern-slot svg { /* Style for shapes inside slots */
+            width: 80%; height: 80%;
+            opacity: 0.9;
+        }
+        /* Optional: Style for clearing a slot */
+        .clear-slot-btn {
+            position: absolute; top: -5px; right: -5px;
+            width: 18px; height: 18px; border-radius: 50%;
+            background-color: #f56565; /* red-500 */ color: white;
+            border: 1px solid white; font-size: 10px; line-height: 16px;
+            text-align: center; cursor: pointer; font-weight: bold;
+            display: none; /* Hidden by default */
+        }
+        .pattern-slot:hover .clear-slot-btn {
+            display: block; /* Show on hover */
+        }
+
+        #pattern-feedback {
+            text-align: center;
+            margin-top: 5px;
+            font-weight: bold;
+            min-height: 1.5em; /* Reserve space */
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex flex-col h-screen">
+
+        <div class="flex flex-col md:flex-row flex-grow overflow-hidden">
+            <div id="side-panel" class="w-full md:w-64 lg:w-72 bg-gray-200 p-4 border-t-2 md:border-t-0 md:border-l-2 border-gray-300 order-last md:order-first flex flex-col space-y-4 overflow-y-auto">
+                <div>
+                    <h3 class="text-lg font-semibold text-center text-gray-700 mb-2">الأشكال</h3>
+                    <div class="flex flex-wrap justify-center gap-2">
+                        <div class="shape-template" draggable="true" data-shape="square"> <svg viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" fill="#e53e3e"/></svg> </div>
+                        <div class="shape-template" draggable="true" data-shape="rectangle"> <svg viewBox="0 0 100 100"><rect x="10" y="25" width="80" height="50" fill="#3182ce"/></svg> </div>
+                        <div class="shape-template" draggable="true" data-shape="triangle"> <svg viewBox="0 0 100 100"><polygon points="50,10 90,90 10,90" fill="#38a169"/></svg> </div>
+                        <div class="shape-template" draggable="true" data-shape="circle"> <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#f6e05e"/></svg> </div>
+                        <div class="shape-template" draggable="true" data-shape="rhombus"> <svg viewBox="0 0 100 100"><polygon points="50,10 90,50 50,90 10,50" fill="#805ad5"/></svg> </div>
+                        <div class="shape-template" draggable="true" data-shape="parallelogram"> <svg viewBox="0 0 100 100"><polygon points="25,10 100,10 75,90 0,90" fill="#ed8936"/></svg> </div>
+                        <div class="shape-template" draggable="true" data-shape="trapezoid"> <svg viewBox="0 0 100 100"><polygon points="20,10 80,10 100,90 0,90" fill="#dd6b20"/></svg> </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold text-center text-gray-700 mb-2">أدوات القياس</h3>
+                    <div class="space-y-1 text-center">
+                        <label class="inline-flex items-center mx-2"> <input type="radio" class="form-radio text-blue-600" name="measurementType" value="area"> <span class="mr-2">المساحة</span> </label>
+                        <label class="inline-flex items-center mx-2"> <input type="radio" class="form-radio text-blue-600" name="measurementType" value="perimeter"> <span class="mr-2">المحيط</span> </label>
+                    </div>
+                </div>
+
+                <div class="flex-grow bg-white border border-gray-300 rounded p-2 overflow-y-auto" id="calculation-display">
+                    <span class="text-gray-500 italic">اختر نوع القياس ثم اضغط على الشكل...</span>
+                </div>
+
+                <button id="calculate-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled> احسب </button>
+            </div>
+
+            <div id="canvas-area" class="flex-grow relative flex justify-center items-center p-2 md:p-4 overflow-hidden">
+                <canvas id="drawing-canvas"></canvas>
+                </div>
+        </div>
+
+        <div class="w-full order-last">
+            <div id="pattern-box">
+                </div>
+             <div id="pattern-controls" class="text-center py-2 bg-gray-200">
+                 <button id="check-pattern-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled> تحقق من النمط </button>
+                 <div id="pattern-feedback" class="text-sm text-gray-700"></div>
+             </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Get DOM Elements ---
+            const canvas = document.getElementById('drawing-canvas');
+            const ctx = canvas.getContext('2d');
+            const paletteShapes = document.querySelectorAll('.shape-template[draggable="true"]');
+            const sidePanel = document.getElementById('side-panel');
+            const canvasArea = document.getElementById('canvas-area');
+            const calculationDisplay = document.getElementById('calculation-display');
+            const calculateButton = document.getElementById('calculate-button');
+            const measurementRadios = document.querySelectorAll('input[name="measurementType"]');
+            const patternBox = document.getElementById('pattern-box');
+            const checkPatternButton = document.getElementById('check-pattern-button');
+            const patternFeedback = document.getElementById('pattern-feedback');
+
+            // --- Constants and Configuration ---
+            const CM_PER_PIXEL = 0.1;
+            const HANDLE_SIZE = 12;
+            const MIN_SHAPE_SIZE = 25; // Increased minimum size slightly
+            const LABEL_FONT = '12px Cairo';
+            const LABEL_COLOR = '#333';
+            const SELECTED_BORDER_COLOR = '#3182ce';
+            const SELECTED_BORDER_WIDTH = 2;
+            const PATTERN_SLOTS = 6; // Number of slots in the pattern box
+
+            // --- Arabic Translations ---
+            const arabicNumbers = { 0: '٠', 1: '١', 2: '٢', 3: '٣', 4: '٤', 5: '٥', 6: '٦', 7: '٧', 8: '٨', 9: '٩' };
+            const formulaTexts = {
+                area: "المساحة", perimeter: "المحيط",
+                square: { area: " = الضلع × الضلع", perimeter: " = ٤ × الضلع" },
+                rectangle: { area: " = الطول × العرض", perimeter: " = ٢ × (الطول + العرض)" },
+                triangle: { area: " = ٠٫٥ × القاعدة × الارتفاع", perimeter: " = مجموع أطوال الأضلاع" },
+                circle: { area: " = π × نصف القطر²", perimeter: " = ٢ × π × نصف القطر" }, // π ≈ ٣٫١٤
+                rhombus: { area: " = ٠٫٥ × القطر الأول × القطر الثاني", perimeter: " = ٤ × الضلع" },
+                parallelogram: { area: " = القاعدة × الارتفاع", perimeter: " = ٢ × (الضلع الأول + الضلع الثاني)" },
+                trapezoid: { area: " = ٠٫٥ × (القاعدة الأولى + القاعدة الثانية) × الارتفاع", perimeter: " = مجموع أطوال الأضلاع" }
+            };
+            const unitTexts = { area: " سم²", perimeter: " سم" };
+            const patternMessages = {
+                correct: "عمل رائع! هذا نمط صحيح.",
+                incorrect: "حاول مرة أخرى، هذا ليس نمطًا متكررًا.",
+                prompt: "اسحب الأشكال هنا لتكوين نمط متكرر."
+            };
+
+            // --- Utility Functions ---
+            function toArabicNumber(num) {
+                if (typeof num !== 'number' || isNaN(num)) return '?';
+                const numStr = String(Math.round(num));
+                return numStr.split('').map(char => arabicNumbers[char] || char).join('');
+            }
+            function showCalcMessage(htmlContent) { calculationDisplay.innerHTML = htmlContent; }
+            function showPatternMessage(text) { patternFeedback.textContent = text; }
+            function distance(p1, p2) { return Math.hypot(p1.x - p2.x, p1.y - p2.y); }
+            function getVector(p1, p2) { return { x: p2.x - p1.x, y: p2.y - p1.y }; }
+            function crossProduct(v1, v2) { return v1.x * v2.y - v1.y * v2.x; }
+
+            // --- State Variables ---
+            let shapesOnCanvas = []; // Max 1 shape
+            let selectedShape = null;
+            let draggedShapeTemplate = null; // Type ('square', 'circle'...) being dragged from palette
+            let interaction = { type: null, target: null, startX: 0, startY: 0, shapeStartX: 0, shapeStartY: 0, shapeStartW: 0, shapeStartH: 0, shapeStartR: 0, targetElement: null };
+            let nextShapeId = 0;
+            let selectedMeasurementType = null;
+            let shapeToMeasure = null;
+            let patternSlotsData = Array(PATTERN_SLOTS).fill(null); // Store shape type in each slot
+
+            // --- Canvas Resizing ---
+            function resizeCanvas() {
+                const rect = canvasArea.getBoundingClientRect();
+                canvas.width = rect.width; canvas.height = rect.height;
+                drawCanvas();
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // --- Shape Definitions & Initial State ---
+            // Added 'vertices' for polygon shapes
+            // Circle: x,y is center
+            // Square/Rect: x,y is top-left
+            // Triangle: x,y is top vertex
+            // Rhombus: x,y is center, width/height are diagonals
+            // Parallelogram: x,y is top-left, width, height, skewOffset (horizontal shift of top relative to bottom)
+            // Trapezoid: x,y is center of top base, topWidth, bottomWidth, height
+
+            // --- Core Drawing ---
+            function drawCanvas() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                shapesOnCanvas.forEach(shape => {
+                    drawShape(shape);
+                    drawDimensionLabels(shape);
+                    if (shape === selectedShape) {
+                        drawSelectionOutline(shape);
+                        if (!interaction.type?.startsWith('resize')) drawResizeHandles(shape);
+                    }
+                });
+                 if (interaction.type?.startsWith('resize') && selectedShape) drawResizeHandles(selectedShape);
+            }
+
+            function drawShape(shape) {
+                ctx.fillStyle = shape.color; ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
+                ctx.beginPath();
+                switch (shape.type) {
+                    case 'square': ctx.rect(shape.x, shape.y, shape.side, shape.side); break;
+                    case 'rectangle': ctx.rect(shape.x, shape.y, shape.width, shape.height); break;
+                    case 'circle': ctx.arc(shape.x, shape.y, shape.r, 0, Math.PI * 2); break;
+                    case 'triangle': // Isosceles
+                        const tHalfBase = shape.width / 2;
+                        ctx.moveTo(shape.x, shape.y); ctx.lineTo(shape.x - tHalfBase, shape.y + shape.height); ctx.lineTo(shape.x + tHalfBase, shape.y + shape.height); ctx.closePath(); break;
+                    case 'rhombus':
+                        const rHalfW = shape.width / 2; const rHalfH = shape.height / 2;
+                        ctx.moveTo(shape.x, shape.y - rHalfH); // Top
+                        ctx.lineTo(shape.x + rHalfW, shape.y); // Right
+                        ctx.lineTo(shape.x, shape.y + rHalfH); // Bottom
+                        ctx.lineTo(shape.x - rHalfW, shape.y); // Left
+                        ctx.closePath(); break;
+                    case 'parallelogram':
+                        const pBottomY = shape.y + shape.height;
+                        ctx.moveTo(shape.x, shape.y); // Top-left
+                        ctx.lineTo(shape.x + shape.width, shape.y); // Top-right
+                        ctx.lineTo(shape.x + shape.width - shape.skewOffset, pBottomY); // Bottom-right
+                        ctx.lineTo(shape.x - shape.skewOffset, pBottomY); // Bottom-left
+                        ctx.closePath(); break;
+                    case 'trapezoid': // Isosceles trapezoid for simplicity
+                        const tpTopHalfW = shape.topWidth / 2; const tpBottomHalfW = shape.bottomWidth / 2; const tpBottomY = shape.y + shape.height;
+                        ctx.moveTo(shape.x - tpTopHalfW, shape.y); // Top-left
+                        ctx.lineTo(shape.x + tpTopHalfW, shape.y); // Top-right
+                        ctx.lineTo(shape.x + tpBottomHalfW, tpBottomY); // Bottom-right
+                        ctx.lineTo(shape.x - tpBottomHalfW, tpBottomY); // Bottom-left
+                        ctx.closePath(); break;
+                }
+                ctx.fill(); ctx.stroke();
+            }
+
+            function drawSelectionOutline(shape) {
+                ctx.strokeStyle = SELECTED_BORDER_COLOR; ctx.lineWidth = SELECTED_BORDER_WIDTH; ctx.setLineDash([5, 3]);
+                const offset = SELECTED_BORDER_WIDTH / 2;
+                 // Use getVertices to draw outline for polygon shapes
+                 const vertices = getVertices(shape);
+                 if (vertices.length > 0) {
+                     ctx.beginPath();
+                     ctx.moveTo(vertices[0].x, vertices[0].y);
+                     for (let i = 1; i < vertices.length; i++) {
+                         ctx.lineTo(vertices[i].x, vertices[i].y);
+                     }
+                     ctx.closePath();
+                     // TODO: Offset the outline properly (complex for arbitrary polygons)
+                     // Simple bounding box outline for now as fallback
+                     if (shape.type !== 'circle') {
+                          const bounds = getBoundingBox(shape);
+                          ctx.strokeRect(bounds.minX - offset, bounds.minY - offset, bounds.maxX - bounds.minX + 2*offset, bounds.maxY - bounds.minY + 2*offset);
+                     } else { // Circle outline
+                          ctx.beginPath(); ctx.arc(shape.x, shape.y, shape.r + offset, 0, Math.PI * 2); ctx.stroke();
+                     }
+
+                 }
+                ctx.setLineDash([]);
+            }
+
+            function drawDimensionLabels(shape) {
+                ctx.fillStyle = LABEL_COLOR; ctx.font = LABEL_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                let widthCm, heightCm, radiusCm, sideCm, baseCm, sideACm, topBaseCm, bottomBaseCm, slantHeightCm;
+                const vertices = getVertices(shape); // Get vertices for calculations
+
+                switch (shape.type) {
+                    case 'square': sideCm = shape.side * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(sideCm)} سم`, shape.x + shape.side / 2, shape.y - 10); ctx.save(); ctx.translate(shape.x - 10, shape.y + shape.side / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(`${toArabicNumber(sideCm)} سم`, 0, 0); ctx.restore(); break;
+                    case 'rectangle': widthCm = shape.width * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(widthCm)} سم`, shape.x + shape.width / 2, shape.y - 10); ctx.save(); ctx.translate(shape.x - 10, shape.y + shape.height / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(`${toArabicNumber(heightCm)} سم`, 0, 0); ctx.restore(); break;
+                    case 'circle': radiusCm = shape.r * CM_PER_PIXEL; ctx.beginPath(); ctx.moveTo(shape.x, shape.y); ctx.lineTo(shape.x + shape.r, shape.y); ctx.strokeStyle = LABEL_COLOR; ctx.lineWidth = 0.5; ctx.stroke(); ctx.fillText(`نق = ${toArabicNumber(radiusCm)} سم`, shape.x + shape.r / 2, shape.y - 8); break;
+                    case 'triangle': baseCm = shape.width * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; sideACm = Math.hypot(shape.width / 2, shape.height) * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(baseCm)} سم`, shape.x, shape.y + shape.height + 10); ctx.save(); ctx.translate(shape.x - shape.width / 4, shape.y + shape.height / 2); ctx.rotate(Math.atan2(shape.height, -shape.width/2)); ctx.fillText(`${toArabicNumber(sideACm)} سم`, 0, -8); ctx.restore(); ctx.save(); ctx.translate(shape.x + shape.width / 4, shape.y + shape.height / 2); ctx.rotate(Math.atan2(shape.height, shape.width/2)); ctx.fillText(`${toArabicNumber(sideACm)} سم`, 0, -8); ctx.restore(); break;
+                    case 'rhombus': sideCm = distance(vertices[0], vertices[1]) * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(sideCm)} سم`, (vertices[0].x + vertices[1].x)/2, (vertices[0].y + vertices[1].y)/2 - 8); break; // Label one side
+                    case 'parallelogram': sideACm = shape.width * CM_PER_PIXEL; sideBCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(sideACm)} سم`, shape.x + shape.width / 2, shape.y - 10); ctx.save(); ctx.translate((vertices[1].x+vertices[2].x)/2 - 5, (vertices[1].y+vertices[2].y)/2); ctx.rotate(Math.atan2(shape.height, -shape.skewOffset)); ctx.fillText(`${toArabicNumber(sideBCm)} سم`, 0, -8); ctx.restore(); break;
+                    case 'trapezoid': topBaseCm = shape.topWidth * CM_PER_PIXEL; bottomBaseCm = shape.bottomWidth * CM_PER_PIXEL; slantHeightCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(topBaseCm)} سم`, shape.x, shape.y - 10); ctx.fillText(`${toArabicNumber(bottomBaseCm)} سم`, shape.x, shape.y + shape.height + 10); ctx.save(); ctx.translate((vertices[1].x+vertices[2].x)/2 + 5, (vertices[1].y+vertices[2].y)/2); ctx.rotate(Math.atan2(shape.height, (shape.bottomWidth-shape.topWidth)/2)); ctx.fillText(`${toArabicNumber(slantHeightCm)} سم`, 0, -8); ctx.restore(); break; // Label top, bottom, one slant side
+                }
+            }
+
+            // --- Drag and Drop ---
+            paletteShapes.forEach(el => {
+                el.addEventListener('dragstart', (e) => {
+                    draggedShapeTemplate = e.target.dataset.shape;
+                    e.dataTransfer.setData('text/plain', draggedShapeTemplate);
+                    e.dataTransfer.effectAllowed = 'copy';
+                });
+                 el.addEventListener('dragend', () => { draggedShapeTemplate = null; });
+            });
+
+            // --- Canvas Drop Target ---
+            canvas.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+            canvas.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const shapeType = e.dataTransfer.getData('text/plain');
+                if (!shapeType) return;
+                shapesOnCanvas = []; removeResizeHandles(); selectedShape = null; clearMeasurement(); // Clear canvas for new shape
+
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+                let newShape; const defaultSize = 80; const defaultColor = `hsl(${Math.random() * 360}, 70%, 70%)`;
+
+                switch (shapeType) {
+                    case 'square': newShape = { id: nextShapeId++, type: 'square', x: x - defaultSize/2, y: y - defaultSize/2, side: defaultSize, color: defaultColor, isSelected: false }; break;
+                    case 'rectangle': newShape = { id: nextShapeId++, type: 'rectangle', x: x - defaultSize*0.75, y: y - defaultSize/2, width: defaultSize * 1.5, height: defaultSize, color: defaultColor, isSelected: false }; break;
+                    case 'circle': newShape = { id: nextShapeId++, type: 'circle', x: x, y: y, r: defaultSize / 2, color: defaultColor, isSelected: false }; break;
+                    case 'triangle': newShape = { id: nextShapeId++, type: 'triangle', x: x, y: y - defaultSize/2, width: defaultSize * 1.2, height: defaultSize, color: defaultColor, isSelected: false }; break;
+                    case 'rhombus': newShape = { id: nextShapeId++, type: 'rhombus', x: x, y: y, width: defaultSize * 1.2, height: defaultSize, color: defaultColor, isSelected: false }; break; // width/height are diagonals
+                    case 'parallelogram': newShape = { id: nextShapeId++, type: 'parallelogram', x: x - defaultSize*0.75, y: y - defaultSize/2, width: defaultSize * 1.5, height: defaultSize, skewOffset: defaultSize * 0.3, color: defaultColor, isSelected: false }; break;
+                    case 'trapezoid': newShape = { id: nextShapeId++, type: 'trapezoid', x: x, y: y - defaultSize/2, topWidth: defaultSize * 0.8, bottomWidth: defaultSize * 1.4, height: defaultSize, color: defaultColor, isSelected: false }; break; // x,y is center of top base
+                    default: return;
+                }
+                shapesOnCanvas.push(newShape);
+                selectShape(newShape);
+            });
+
+            // --- Shape Selection & Hit Testing ---
+            function selectShape(shapeToSelect) {
+                if (selectedShape === shapeToSelect) return;
+                if (selectedShape) { selectedShape.isSelected = false; removeResizeHandles(); }
+                selectedShape = shapeToSelect;
+                if (selectedShape) { selectedShape.isSelected = true; createResizeHandles(selectedShape); }
+                clearMeasurement();
+                drawCanvas();
+            }
+
+            function getShapeAtPoint(x, y) {
+                if (shapesOnCanvas.length === 0) return null;
+                const shape = shapesOnCanvas[0]; // Only one shape
+                const vertices = getVertices(shape);
+
+                if (shape.type === 'circle') {
+                    if (distance({x, y}, {x: shape.x, y: shape.y}) <= shape.r) return shape;
+                } else if (vertices.length > 0) {
+                    // Point-in-polygon test (ray casting algorithm)
+                    let inside = false;
+                    for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+                        const xi = vertices[i].x, yi = vertices[i].y;
+                        const xj = vertices[j].x, yj = vertices[j].y;
+                        const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                        if (intersect) inside = !inside;
+                    }
+                    if (inside) return shape;
+                }
+                return null;
+            }
+
+            // --- Canvas Interaction ---
+            function getEventCoordinates(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches?.[0]?.clientX ?? e.clientX;
+                const clientY = e.touches?.[0]?.clientY ?? e.clientY;
+                return { x: clientX - rect.left, y: clientY - rect.top };
+            }
+
+            function handleInteractionStart(e) {
+                if (e.target !== canvas && !e.target.classList.contains('resize-handle')) return;
+                if (e.type === 'touchstart') e.preventDefault();
+                const coords = getEventCoordinates(e);
+                interaction.startX = coords.x; interaction.startY = coords.y; interaction.type = null;
+
+                if (e.target.classList.contains('resize-handle')) {
+                    if (!selectedShape) return;
+                    interaction.type = 'resize'; interaction.target = e.target.dataset.handle; interaction.targetElement = e.target;
+                    interaction.shapeStartX = selectedShape.x; interaction.shapeStartY = selectedShape.y;
+                    interaction.shapeStartW = selectedShape.width ?? selectedShape.side ?? selectedShape.topWidth ?? (selectedShape.r * 2); // Use appropriate width property
+                    interaction.shapeStartH = selectedShape.height ?? selectedShape.side ?? (selectedShape.r * 2);
+                    interaction.shapeStartR = selectedShape.r;
+                    interaction.shapeStartSkew = selectedShape.skewOffset;
+                    interaction.shapeStartBottomW = selectedShape.bottomWidth;
+                    e.target.style.cursor = 'grabbing'; canvas.style.cursor = e.target.style.cursor;
+                    return;
+                }
+
+                const clickedShape = getShapeAtPoint(coords.x, coords.y);
+                if (clickedShape) {
+                    if (clickedShape !== selectedShape) selectShape(clickedShape);
+                    interaction.type = 'drag-shape'; interaction.target = clickedShape;
+                    interaction.shapeStartX = clickedShape.x; interaction.shapeStartY = clickedShape.y;
+                    canvas.style.cursor = 'grabbing';
+                    if (selectedMeasurementType) prepareCalculation(clickedShape);
+                } else {
+                    selectShape(null); canvas.style.cursor = 'default';
+                }
+            }
+
+            function handleInteractionMove(e) {
+                if (!interaction.type) return;
+                if (e.type === 'touchmove') e.preventDefault();
+                const coords = getEventCoordinates(e);
+                const dx = coords.x - interaction.startX; const dy = coords.y - interaction.startY;
+
+                if (interaction.type === 'drag-shape' && interaction.target) {
+                    interaction.target.x = interaction.shapeStartX + dx;
+                    interaction.target.y = interaction.shapeStartY + dy;
+                    updateResizeHandles(interaction.target); drawCanvas();
+                } else if (interaction.type === 'resize' && selectedShape) {
+                    resizeShape(selectedShape, interaction.target, dx, dy); // Pass handle name
+                    updateResizeHandles(selectedShape);
+                    if (shapeToMeasure === selectedShape && selectedMeasurementType) prepareCalculation(selectedShape, false);
+                    drawCanvas();
+                }
+            }
+
+            function handleInteractionEnd(e) {
+                if (interaction.type === 'resize' && interaction.targetElement) {
+                     const handleName = interaction.targetElement.dataset.handle;
+                     const cursorClass = Array.from(interaction.targetElement.classList).find(cls => cls !== 'resize-handle');
+                     interaction.targetElement.style.cursor = cursorClass ? window.getComputedStyle(interaction.targetElement).cursor : 'grab';
+                }
+                if (shapeToMeasure && interaction.type) calculateButton.disabled = false;
+                interaction.type = null; interaction.target = null; interaction.targetElement = null;
+                canvas.style.cursor = 'default';
+                drawCanvas();
+            }
+
+            // Attach Interaction Listeners
+            canvas.addEventListener('mousedown', handleInteractionStart);
+            canvas.addEventListener('mousemove', handleInteractionMove);
+            canvas.addEventListener('mouseup', handleInteractionEnd);
+            canvas.addEventListener('mouseleave', handleInteractionEnd);
+            canvas.addEventListener('touchstart', handleInteractionStart, { passive: false });
+            canvas.addEventListener('touchmove', handleInteractionMove, { passive: false });
+            canvas.addEventListener('touchend', handleInteractionEnd);
+            canvas.addEventListener('touchcancel', handleInteractionEnd);
+            canvasArea.addEventListener('mousedown', handleInteractionStart); // Use delegation
+            canvasArea.addEventListener('touchstart', handleInteractionStart, { passive: false });
+
+            // --- Resizing ---
+            function createResizeHandles(shape) {
+                removeResizeHandles();
+                const handlePositions = getHandlePositions(shape);
+                for (const handleName in handlePositions) {
+                    const pos = handlePositions[handleName];
+                    const handle = document.createElement('div');
+                    handle.className = `resize-handle ${handleName}`; handle.dataset.handle = handleName;
+                    handle.style.left = `${pos.x - HANDLE_SIZE / 2}px`; handle.style.top = `${pos.y - HANDLE_SIZE / 2}px`;
+                    handle.style.position = 'absolute'; canvasArea.appendChild(handle);
+                }
+            }
+            function removeResizeHandles() { canvasArea.querySelectorAll('.resize-handle').forEach(h => h.remove()); }
+            function updateResizeHandles(shape) {
+                const handles = canvasArea.querySelectorAll('.resize-handle'); if (handles.length === 0 || !shape) return;
+                const handlePositions = getHandlePositions(shape);
+                handles.forEach(handle => {
+                    const handleName = handle.dataset.handle; const pos = handlePositions[handleName];
+                    if (pos) { handle.style.left = `${pos.x - HANDLE_SIZE / 2}px`; handle.style.top = `${pos.y - HANDLE_SIZE / 2}px`; }
+                    else { handle.remove(); }
+                });
+            }
+
+            // Helper to get vertices for polygon shapes
+            function getVertices(shape) {
+                const vertices = [];
+                let x = shape.x, y = shape.y;
+                switch (shape.type) {
+                    case 'square': vertices.push({x:x, y:y}, {x:x+shape.side, y:y}, {x:x+shape.side, y:y+shape.side}, {x:x, y:y+shape.side}); break;
+                    case 'rectangle': vertices.push({x:x, y:y}, {x:x+shape.width, y:y}, {x:x+shape.width, y:y+shape.height}, {x:x, y:y+shape.height}); break;
+                    case 'triangle': const tHalfBase = shape.width / 2; vertices.push({x:x, y:y}, {x:x+tHalfBase, y:y+shape.height}, {x:x-tHalfBase, y:y+shape.height}); break; // Order for drawing/hit-test
+                    case 'rhombus': const rHalfW = shape.width / 2; const rHalfH = shape.height / 2; vertices.push({x:x, y:y-rHalfH}, {x:x+rHalfW, y:y}, {x:x, y:y+rHalfH}, {x:x-rHalfW, y:y}); break;
+                    case 'parallelogram': const pBottomY = shape.y + shape.height; vertices.push({x:x, y:y}, {x:x+shape.width, y:y}, {x:x+shape.width-shape.skewOffset, y:pBottomY}, {x:x-shape.skewOffset, y:pBottomY}); break;
+                    case 'trapezoid': const tpTopHalfW = shape.topWidth / 2; const tpBottomHalfW = shape.bottomWidth / 2; const tpBottomY = shape.y + shape.height; vertices.push({x:x-tpTopHalfW, y:y}, {x:x+tpTopHalfW, y:y}, {x:x+tpBottomHalfW, y:tpBottomY}, {x:x-tpBottomHalfW, y:tpBottomY}); break;
+                    // Circle doesn't use vertices in this way
+                }
+                return vertices;
+            }
+
+             // Helper to get bounding box
+             function getBoundingBox(shape) {
+                 const vertices = getVertices(shape);
+                 if (shape.type === 'circle') {
+                     return { minX: shape.x - shape.r, minY: shape.y - shape.r, maxX: shape.x + shape.r, maxY: shape.y + shape.r };
+                 }
+                 if (vertices.length === 0) return { minX: shape.x, minY: shape.y, maxX: shape.x, maxY: shape.y }; // Fallback
+
+                 let minX = vertices[0].x, minY = vertices[0].y, maxX = vertices[0].x, maxY = vertices[0].y;
+                 for (let i = 1; i < vertices.length; i++) {
+                     minX = Math.min(minX, vertices[i].x); minY = Math.min(minY, vertices[i].y);
+                     maxX = Math.max(maxX, vertices[i].x); maxY = Math.max(maxY, vertices[i].y);
+                 }
+                 return { minX, minY, maxX, maxY };
+             }
+
+
+            function getHandlePositions(shape) {
+                // Calculates handle positions, using vertices for polygons
+                const positions = {};
+                const vertices = getVertices(shape); // Get calculated vertices
+
+                switch (shape.type) {
+                    case 'square':
+                    case 'rectangle':
+                         positions.nw = vertices[0]; positions.ne = vertices[1];
+                         positions.se = vertices[2]; positions.sw = vertices[3]; break;
+                    case 'circle': positions.e = { x: shape.x + shape.r, y: shape.y }; break; // Center x,y
+                    case 'triangle': positions.n = vertices[0]; positions.se = vertices[1]; positions.sw = vertices[2]; break; // Top, bottom-right, bottom-left
+                    case 'rhombus': // Handles at the 4 vertices
+                         positions.vertex0 = vertices[0]; positions.vertex1 = vertices[1];
+                         positions.vertex2 = vertices[2]; positions.vertex3 = vertices[3]; break;
+                    case 'parallelogram': // Handles at the 4 vertices
+                         positions.vertex0 = vertices[0]; positions.vertex1 = vertices[1];
+                         positions.vertex2 = vertices[2]; positions.vertex3 = vertices[3]; break;
+                    case 'trapezoid': // Handles at the 4 vertices
+                         positions.vertex0 = vertices[0]; positions.vertex1 = vertices[1];
+                         positions.vertex2 = vertices[2]; positions.vertex3 = vertices[3]; break;
+                }
+                return positions;
+            }
+
+             // --- UPDATED resizeShape function ---
+             function resizeShape(shape, handle, dx, dy) {
+                // Resizes shape based on handle dragged, ensuring minimum size and correct position adjustments
+                const startX = interaction.shapeStartX; const startY = interaction.shapeStartY;
+                const startW = interaction.shapeStartW; const startH = interaction.shapeStartH;
+                const startR = interaction.shapeStartR;
+                const startSkew = interaction.shapeStartSkew;
+                const startTopW = shape.topWidth; // Specific for trapezoid
+                const startBottomW = interaction.shapeStartBottomW; // Specific for trapezoid
+
+                let newX = shape.x, newY = shape.y, newW = shape.width, newH = shape.height, newSide = shape.side, newR = shape.r;
+
+                // --- Handle Specific Resizing ---
+                switch (shape.type) {
+                    case 'square':
+                        let sideChange = 0;
+                        // Determine side change based on handle and largest delta
+                        if (handle === 'se') sideChange = Math.max(dx, dy);
+                        else if (handle === 'nw') sideChange = Math.max(-dx, -dy);
+                        else if (handle === 'ne') sideChange = Math.max(dx, -dy);
+                        else if (handle === 'sw') sideChange = Math.max(-dx, dy);
+
+                        newSide = Math.max(startW + sideChange, MIN_SHAPE_SIZE); // startW holds initial side
+
+                        // Adjust position based on which corner is fixed
+                        if (handle.includes('n')) newY = startY + startH - newSide; else newY = startY;
+                        if (handle.includes('w')) newX = startX + startW - newSide; else newX = startX;
+
+                        shape.side = newSide; shape.x = newX; shape.y = newY;
+                        break;
+
+                    case 'rectangle':
+                        newW = shape.width; newH = shape.height; newX = shape.x; newY = shape.y;
+                        if (handle.includes('e')) newW = Math.max(startW + dx, MIN_SHAPE_SIZE);
+                        if (handle.includes('w')) { newW = Math.max(startW - dx, MIN_SHAPE_SIZE); newX = startX + startW - newW; }
+                        if (handle.includes('s')) newH = Math.max(startH + dy, MIN_SHAPE_SIZE);
+                        if (handle.includes('n')) { newH = Math.max(startH - dy, MIN_SHAPE_SIZE); newY = startY + startH - newH; }
+                        shape.width = newW; shape.height = newH; shape.x = newX; shape.y = newY;
+                        break;
+
+                    case 'circle': // x,y is center
+                         if (handle === 'e') {
+                             const currentHandleX = startX + startR + dx;
+                             newR = Math.max(distance({x: currentHandleX, y: startY}, {x: startX, y: startY}), MIN_SHAPE_SIZE / 2);
+                             shape.r = newR;
+                         }
+                        break;
+
+                     case 'triangle': // x,y is top vertex
+                         newW = shape.width; newH = shape.height; newX = shape.x; newY = shape.y;
+                         if (handle === 'n') { const potentialH = Math.max(startH - dy, MIN_SHAPE_SIZE); newY = startY + startH - potentialH; newH = potentialH; }
+                         else if (handle === 'se') { newW = Math.max(startW + (dx * 2), MIN_SHAPE_SIZE); newH = Math.max(startH + dy, MIN_SHAPE_SIZE); }
+                         else if (handle === 'sw') { const potentialW = Math.max(startW - (dx * 2), MIN_SHAPE_SIZE); newX = startX + (startW - potentialW) / 2; newW = potentialW; newH = Math.max(startH + dy, MIN_SHAPE_SIZE); }
+                         shape.width = newW; shape.height = newH; shape.x = newX; shape.y = newY;
+                         break;
+
+                     case 'rhombus': // x,y is center, w/h are diagonals
+                         newW = shape.width; newH = shape.height;
+                         // vertex0=top, 1=right, 2=bottom, 3=left
+                         if (handle === 'vertex0') newH = Math.max(startH - dy * 2, MIN_SHAPE_SIZE); // Drag top affects height
+                         else if (handle === 'vertex2') newH = Math.max(startH + dy * 2, MIN_SHAPE_SIZE); // Drag bottom affects height
+                         else if (handle === 'vertex1') newW = Math.max(startW + dx * 2, MIN_SHAPE_SIZE); // Drag right affects width
+                         else if (handle === 'vertex3') newW = Math.max(startW - dx * 2, MIN_SHAPE_SIZE); // Drag left affects width
+                         shape.width = newW; shape.height = newH;
+                         // Center x,y remains fixed
+                         break;
+
+                    case 'parallelogram': // x,y is top-left
+                         newW = shape.width; newH = shape.height; newX = shape.x; newY = shape.y; let newSkew = shape.skewOffset;
+                         // vertex0=TL, 1=TR, 2=BR, 3=BL
+                         if (handle === 'vertex0') { // Drag TL
+                             newW = Math.max(startW - dx, MIN_SHAPE_SIZE); newH = Math.max(startH - dy, MIN_SHAPE_SIZE);
+                             newX = startX + dx; newY = startY + dy;
+                             newSkew = startSkew - dx; // Adjust skew based on TL x change
+                         } else if (handle === 'vertex1') { // Drag TR
+                             newW = Math.max(startW + dx, MIN_SHAPE_SIZE); newH = Math.max(startH - dy, MIN_SHAPE_SIZE);
+                             newY = startY + dy;
+                             // newSkew remains same relative to TL
+                         } else if (handle === 'vertex2') { // Drag BR
+                             newW = Math.max(startW + dx - (startSkew - newSkew), MIN_SHAPE_SIZE); // Complex interaction
+                             newH = Math.max(startH + dy, MIN_SHAPE_SIZE);
+                             newSkew = startSkew + dx; // Adjust skew based on BR x change relative to TR?
+                         } else if (handle === 'vertex3') { // Drag BL
+                             newW = Math.max(startW - dx + (startSkew - newSkew), MIN_SHAPE_SIZE);
+                             newH = Math.max(startH + dy, MIN_SHAPE_SIZE);
+                             newX = startX + dx; // Adjust TL x
+                             newSkew = startSkew - dx;
+                         }
+                         shape.width = newW; shape.height = newH; shape.x = newX; shape.y = newY; shape.skewOffset = newSkew;
+                         break;
+
+                    case 'trapezoid': // x,y is center of top base
+                         newTopW = shape.topWidth; newBottomW = shape.bottomWidth; newH = shape.height; newX = shape.x; newY = shape.y;
+                         // vertex0=TL, 1=TR, 2=BR, 3=BL
+                         if (handle === 'vertex0') { // Drag TL
+                             newTopW = Math.max(startTopW - dx * 2, MIN_SHAPE_SIZE / 2);
+                             newH = Math.max(startH - dy, MIN_SHAPE_SIZE);
+                             newX = startX + dx; // Adjust center x
+                             newY = startY + dy;
+                         } else if (handle === 'vertex1') { // Drag TR
+                             newTopW = Math.max(startTopW + dx * 2, MIN_SHAPE_SIZE / 2);
+                             newH = Math.max(startH - dy, MIN_SHAPE_SIZE);
+                             newX = startX + dx; // Adjust center x
+                             newY = startY + dy;
+                         } else if (handle === 'vertex2') { // Drag BR
+                             newBottomW = Math.max(startBottomW + dx * 2, MIN_SHAPE_SIZE / 2);
+                             newH = Math.max(startH + dy, MIN_SHAPE_SIZE);
+                             newX = startX + dx * (startTopW / startBottomW); // Adjust center x proportionally? Simpler: keep fixed
+                         } else if (handle === 'vertex3') { // Drag BL
+                             newBottomW = Math.max(startBottomW - dx * 2, MIN_SHAPE_SIZE / 2);
+                             newH = Math.max(startH + dy, MIN_SHAPE_SIZE);
+                             newX = startX + dx * (startTopW / startBottomW); // Adjust center x proportionally? Simpler: keep fixed
+                         }
+                         shape.topWidth = newTopW; shape.bottomWidth = newBottomW; shape.height = newH; shape.x = newX; shape.y = newY;
+                         break;
+                }
+            }
+
+
+            // --- Measurement Logic ---
+            measurementRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    selectedMeasurementType = e.target.value;
+                    shapeToMeasure = null; calculateButton.disabled = true;
+                    if (selectedShape) prepareCalculation(selectedShape);
+                    else showCalcMessage(`<span class="text-gray-500 italic">اختر ${selectedMeasurementType === 'area' ? 'المساحة' : 'المحيط'} ثم اضغط على الشكل...</span>`);
+                });
+            });
+
+            function clearMeasurement() {
+                 shapeToMeasure = null; calculateButton.disabled = true;
+                 if (!selectedMeasurementType) showCalcMessage('<span class="text-gray-500 italic">اختر نوع القياس ثم اضغط على الشكل...</span>');
+                 else showCalcMessage(`<span class="text-gray-500 italic">اختر ${selectedMeasurementType === 'area' ? 'المساحة' : 'المحيط'} ثم اضغط على الشكل...</span>`);
+            }
+
+            function prepareCalculation(shape, enableButton = true) {
+                if (!selectedMeasurementType || !shape) { clearMeasurement(); return; }
+                shapeToMeasure = shape;
+                let formula = `${formulaTexts[selectedMeasurementType]}`; let substituted = `${formulaTexts[selectedMeasurementType]}`;
+                const shapeFormulas = formulaTexts[shape.type];
+                if (!shapeFormulas || !shapeFormulas[selectedMeasurementType]) { showCalcMessage("<span>الحساب غير مدعوم.</span>"); calculateButton.disabled = true; return; }
+                formula += shapeFormulas[selectedMeasurementType]; substituted += shapeFormulas[selectedMeasurementType];
+
+                let sideCm, widthCm, heightCm, radiusCm, baseCm, sideACm, sideBCm, topBaseCm, bottomBaseCm, diag1Cm, diag2Cm, slantHeightCm, pi = 3.14;
+                const vertices = getVertices(shape); // Get vertices for calculations
+
+                try {
+                    switch (shape.type) {
+                        case 'square': sideCm = shape.side * CM_PER_PIXEL; substituted = substituted.replace(/الضلع/g, toArabicNumber(sideCm)); break;
+                        case 'rectangle': widthCm = shape.width * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; substituted = substituted.replace("الطول", toArabicNumber(widthCm)).replace("العرض", toArabicNumber(heightCm)); break;
+                        case 'circle': radiusCm = shape.r * CM_PER_PIXEL; substituted = substituted.replace(/نصف القطر/g, toArabicNumber(radiusCm)).replace("π", '٣٫١٤'); break;
+                        case 'triangle': baseCm = shape.width * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; sideACm = Math.hypot(shape.width / 2, shape.height) * CM_PER_PIXEL;
+                             if (selectedMeasurementType === 'area') substituted = substituted.replace("القاعدة", toArabicNumber(baseCm)).replace("الارتفاع", toArabicNumber(heightCm)).replace("٠٫٥", '٠٫٥');
+                             else substituted = `المحيط = ${toArabicNumber(baseCm)} + ${toArabicNumber(sideACm)} + ${toArabicNumber(sideACm)}`; break;
+                        case 'rhombus': diag1Cm = shape.width * CM_PER_PIXEL; diag2Cm = shape.height * CM_PER_PIXEL; sideCm = distance(vertices[0], vertices[1]) * CM_PER_PIXEL;
+                             if (selectedMeasurementType === 'area') substituted = substituted.replace("القطر الأول", toArabicNumber(diag1Cm)).replace("القطر الثاني", toArabicNumber(diag2Cm)).replace("٠٫٥", '٠٫٥');
+                             else substituted = substituted.replace("الضلع", toArabicNumber(sideCm)); break;
+                        case 'parallelogram': baseCm = shape.width * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; sideBCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; // Slanted side
+                             if (selectedMeasurementType === 'area') substituted = substituted.replace("القاعدة", toArabicNumber(baseCm)).replace("الارتفاع", toArabicNumber(heightCm));
+                             else substituted = substituted.replace("الضلع الأول", toArabicNumber(baseCm)).replace("الضلع الثاني", toArabicNumber(sideBCm)); break;
+                        case 'trapezoid': topBaseCm = shape.topWidth * CM_PER_PIXEL; bottomBaseCm = shape.bottomWidth * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; sideACm = distance(vertices[0], vertices[3]) * CM_PER_PIXEL; sideBCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; // Slanted sides
+                            if (selectedMeasurementType === 'area') substituted = substituted.replace("القاعدة الأولى", toArabicNumber(topBaseCm)).replace("القاعدة الثانية", toArabicNumber(bottomBaseCm)).replace("الارتفاع", toArabicNumber(heightCm)).replace("٠٫٥", '٠٫٥');
+                            else substituted = `المحيط = ${toArabicNumber(topBaseCm)} + ${toArabicNumber(bottomBaseCm)} + ${toArabicNumber(sideACm)} + ${toArabicNumber(sideBCm)}`; break; // Sum of all 4 sides
+                        default: throw new Error("Unsupported shape.");
+                    }
+                    showCalcMessage(`<span>${formula}</span><span>${substituted}</span><span id="result-line" class="font-bold text-blue-700 hidden"></span>`);
+                    calculateButton.disabled = !enableButton;
+                } catch (error) { console.error("Prep calc error:", error); showCalcMessage("<span>خطأ.</span>"); calculateButton.disabled = true; }
+            }
+
+            calculateButton.addEventListener('click', () => {
+                if (!shapeToMeasure || !selectedMeasurementType) return;
+                let result = null; const unit = unitTexts[selectedMeasurementType] || '';
+                let sideCm, widthCm, heightCm, radiusCm, baseCm, sideACm, sideBCm, topBaseCm, bottomBaseCm, diag1Cm, diag2Cm, pi = 3.14;
+                const vertices = getVertices(shapeToMeasure);
+
+                 try {
+                    switch (shapeToMeasure.type) {
+                         case 'square': sideCm = shapeToMeasure.side * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (sideCm * sideCm) : (4 * sideCm); break;
+                         case 'rectangle': widthCm = shapeToMeasure.width * CM_PER_PIXEL; heightCm = shapeToMeasure.height * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (widthCm * heightCm) : (2 * (widthCm + heightCm)); break;
+                         case 'circle': radiusCm = shapeToMeasure.r * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (pi * radiusCm * radiusCm) : (2 * pi * radiusCm); break;
+                         case 'triangle': baseCm = shapeToMeasure.width * CM_PER_PIXEL; heightCm = shapeToMeasure.height * CM_PER_PIXEL; sideACm = Math.hypot(shapeToMeasure.width / 2, shapeToMeasure.height) * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (0.5 * baseCm * heightCm) : (baseCm + 2 * sideACm); break;
+                         case 'rhombus': diag1Cm = shapeToMeasure.width * CM_PER_PIXEL; diag2Cm = shapeToMeasure.height * CM_PER_PIXEL; sideCm = distance(vertices[0], vertices[1]) * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (0.5 * diag1Cm * diag2Cm) : (4 * sideCm); break;
+                         case 'parallelogram': baseCm = shapeToMeasure.width * CM_PER_PIXEL; heightCm = shapeToMeasure.height * CM_PER_PIXEL; sideBCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (baseCm * heightCm) : (2 * (baseCm + sideBCm)); break;
+                         case 'trapezoid': topBaseCm = shapeToMeasure.topWidth * CM_PER_PIXEL; bottomBaseCm = shapeToMeasure.bottomWidth * CM_PER_PIXEL; heightCm = shapeToMeasure.height * CM_PER_PIXEL; sideACm = distance(vertices[0], vertices[3]) * CM_PER_PIXEL; sideBCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (0.5 * (topBaseCm + bottomBaseCm) * heightCm) : (topBaseCm + bottomBaseCm + sideACm + sideBCm); break;
+                         default: throw new Error("Unsupported shape.");
+                    }
+                    const resultLine = calculationDisplay.querySelector('#result-line');
+                    if (resultLine) { resultLine.textContent = `= ${toArabicNumber(result)}${unit}`; resultLine.classList.remove('hidden'); }
+                    calculateButton.disabled = true;
+                } catch (error) { console.error("Final calc error:", error); showCalcMessage("<span>خطأ.</span>"); calculateButton.disabled = true; }
+            });
+
+            // --- Pattern Box Logic ---
+            function initializePatternBox() {
+                patternBox.innerHTML = ''; // Clear existing slots
+                patternSlotsData = Array(PATTERN_SLOTS).fill(null); // Reset data
+                for (let i = 0; i < PATTERN_SLOTS; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'pattern-slot';
+                    slot.dataset.index = i;
+                    // Drag and drop listeners for slots
+                    slot.addEventListener('dragover', handlePatternDragOver);
+                    slot.addEventListener('dragleave', handlePatternDragLeave);
+                    slot.addEventListener('drop', handlePatternDrop);
+                    // Click to clear slot
+                    slot.addEventListener('click', handleSlotClick);
+                    patternBox.appendChild(slot);
+                }
+                checkPatternButton.disabled = true; // Disable initially
+                showPatternMessage(patternMessages.prompt);
+            }
+
+            function handlePatternDragOver(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                e.currentTarget.classList.add('over'); // Highlight slot
+            }
+
+            function handlePatternDragLeave(e) {
+                e.currentTarget.classList.remove('over');
+            }
+
+            function handlePatternDrop(e) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('over');
+                const shapeType = e.dataTransfer.getData('text/plain'); // Get type from palette drag
+                const slotIndex = parseInt(e.currentTarget.dataset.index);
+
+                if (shapeType && slotIndex >= 0 && slotIndex < PATTERN_SLOTS) {
+                    patternSlotsData[slotIndex] = shapeType; // Store shape type
+                    // Display shape SVG in the slot
+                    const paletteShapeDiv = document.querySelector(`.shape-template[data-shape="${shapeType}"]`);
+                    if (paletteShapeDiv) {
+                        e.currentTarget.innerHTML = paletteShapeDiv.innerHTML; // Copy SVG
+                        // Add a clear button (optional)
+                         const clearBtn = document.createElement('span');
+                         clearBtn.className = 'clear-slot-btn';
+                         clearBtn.innerHTML = '&times;'; // 'x' symbol
+                         clearBtn.onclick = (ev) => { // Use onclick for simplicity here
+                             ev.stopPropagation(); // Prevent triggering slot click
+                             clearPatternSlot(slotIndex);
+                         };
+                         e.currentTarget.appendChild(clearBtn);
+                    } else {
+                        e.currentTarget.innerHTML = '?'; // Fallback if SVG not found
+                    }
+                    updatePatternCheckButton(); // Enable/disable check button
+                    showPatternMessage(''); // Clear prompt/feedback
+                }
+            }
+
+            function handleSlotClick(e) {
+                 // Optional: Clear slot on click if needed, or do nothing
+                 // const slotIndex = parseInt(e.currentTarget.dataset.index);
+                 // clearPatternSlot(slotIndex);
+            }
+
+            function clearPatternSlot(index) {
+                 if (index >= 0 && index < PATTERN_SLOTS) {
+                     patternSlotsData[index] = null;
+                     const slotElement = patternBox.children[index];
+                     if (slotElement) {
+                         slotElement.innerHTML = ''; // Clear content
+                     }
+                     updatePatternCheckButton();
+                     showPatternMessage(''); // Clear feedback
+                 }
+            }
+
+
+            function updatePatternCheckButton() {
+                // Enable check button only if at least two slots are filled
+                const filledSlots = patternSlotsData.filter(type => type !== null).length;
+                checkPatternButton.disabled = filledSlots < 2;
+            }
+
+            checkPatternButton.addEventListener('click', () => {
+                const patternSequence = patternSlotsData.filter(type => type !== null); // Get only filled slots
+                if (patternSequence.length < 2) return; // Need at least 2 shapes
+
+                let isPattern = false;
+                // Check for simple repeating patterns (find shortest repeating unit)
+                for (let unitLength = 1; unitLength <= Math.floor(patternSequence.length / 2); unitLength++) {
+                    const unit = patternSequence.slice(0, unitLength);
+                    let repeats = true;
+                    // Check if the rest of the sequence consists of repetitions of the unit
+                    for (let i = unitLength; i < patternSequence.length; i++) {
+                        if (patternSequence[i] !== unit[i % unitLength]) {
+                            repeats = false;
+                            break;
+                        }
+                    }
+                    if (repeats) {
+                        isPattern = true;
+                        break; // Found the shortest repeating unit
+                    }
+                }
+
+                // Display feedback
+                if (isPattern) {
+                    showPatternMessage(patternMessages.correct);
+                } else {
+                    showPatternMessage(patternMessages.incorrect);
+                }
+            });
+
+
+            // --- Initial Setup ---
+            initializePatternBox(); // Create the pattern slots
+            drawCanvas();
+
+        }); // End DOMContentLoaded
+    </script>
+</body>
+</html>
