@@ -1,874 +1,1159 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أداة الأشكال الهندسية والأنماط</title>
+    <title>Geometry Tool - Area, Perimeter & Patterns</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Use Cairo font for Arabic text */
-        body, button, input, label, select, textarea {
-            font-family: 'Cairo', sans-serif;
-        }
-        /* Prevent text selection during drag */
+        /* Base Styles */
         body {
-            user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
-            overflow: hidden; /* Prevent scrolling */
+            font-family: 'Inter', 'Cairo', sans-serif;
+            overscroll-behavior: none;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f4f8; /* Light grayish blue background */
         }
-        /* Style for draggable shapes in the palette */
-        .shape-template {
-            cursor: grab; border: 1px solid #ccc; background-color: #f0f0f0;
-            display: flex; justify-content: center; align-items: center;
-            width: 60px; height: 60px; margin: 5px; border-radius: 4px;
-            box-shadow: 1px 1px 3px rgba(0,0,0,0.1); transition: background-color 0.2s;
+
+        /* Layout */
+        .main-container {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden; /* Prevent scrolling on main parts */
         }
-        .shape-template:hover { background-color: #e0e0e0; }
-        .shape-template svg { width: 70%; height: 70%; pointer-events: none; }
 
-        /* Style for the main canvas */
-        canvas { border: 1px solid #cbd5e1; background-color: #ffffff; cursor: default; touch-action: none; }
-
-        /* Style for resize handles */
-        .resize-handle {
-            position: absolute; width: 12px; height: 12px;
-            background-color: #3182ce; border: 1px solid white; border-radius: 50%;
-            cursor: grab; box-shadow: 0 0 3px rgba(0,0,0,0.6); z-index: 10;
+        /* Toolbar */
+        #shape-toolbar {
+            width: 100px; /* Increased width slightly for palettes */
+            background-color: #e2e8f0; /* Gray 200 */
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem; /* Increased gap */
+            overflow-y: auto;
+            border-right: 1px solid #cbd5e1; /* Gray 300 */
+            flex-shrink: 0;
+            position: relative; /* Needed for absolute positioning of palettes */
         }
-        /* Specific cursors for different handles */
-        .resize-handle.nw, .resize-handle.vertex-0 { cursor: nwse-resize; }
-        .resize-handle.ne, .resize-handle.vertex-1 { cursor: nesw-resize; }
-        .resize-handle.sw, .resize-handle.vertex-3 { cursor: nesw-resize; }
-        .resize-handle.se, .resize-handle.vertex-2 { cursor: nwse-resize; }
-        .resize-handle.n { cursor: ns-resize; }
-        .resize-handle.s { cursor: ns-resize; }
-        .resize-handle.w { cursor: ew-resize; }
-        .resize-handle.e { cursor: ew-resize; } /* Also for circle, rhombus, parallelogram */
-
-        /* Style for calculation display */
-        #calculation-display {
-            min-height: 100px; font-size: 0.9rem; direction: ltr;
-            text-align: right; unicode-bidi: embed;
+        [dir="rtl"] #shape-toolbar {
+            border-right: none;
+            border-left: 1px solid #cbd5e1; /* Gray 300 */
         }
-        #calculation-display span { display: block; margin-bottom: 4px; }
+        .toolbar-shape-container { /* New wrapper */
+            position: relative; /* For palette positioning */
+            display: flex; /* Center shape */
+            justify-content: center;
+            width: 100%;
+        }
+        .toolbar-shape {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #bdc8d5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            background-color: #ffffff;
+            border-radius: 8px;
+            transition: transform 0.1s ease, border-color 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            z-index: 1; /* Ensure shape is above hidden palette initially */
+        }
+        .toolbar-shape.palette-active { /* Style when palette is shown */
+             border-color: #3b82f6; /* Blue highlight */
+        }
+        .toolbar-shape:active { /* Style when actively dragging */
+            cursor: grabbing;
+            transform: scale(1.1);
+            border-style: solid;
+            border-color: #64748b; /* Gray 500 */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1000; /* Bring to front when dragging */
+        }
+        .toolbar-shape svg {
+            width: 70%;
+            height: 70%;
+            pointer-events: none;
+        }
+        /* Toolbar Color Palette */
+        .toolbar-color-palette {
+            position: absolute;
+            display: none; /* Hidden by default */
+            flex-direction: row;
+            gap: 4px;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 5px;
+            border-radius: 15px; /* Rounded pill shape */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 5; /* Above other toolbar items but below dragged item */
+            /* Position it below the shape */
+            bottom: -15px; /* Overlap slightly */
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .toolbar-shape-container.show-palette .toolbar-color-palette {
+            display: flex; /* Show when parent has class */
+        }
+        .toolbar-color-swatch {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #e2e8f0; /* Light border */
+            transition: transform 0.1s ease;
+        }
+        .toolbar-color-swatch:hover {
+            transform: scale(1.2);
+            border-color: #94a3b8;
+        }
 
-        /* Pattern Box Styles */
-        #pattern-box {
-             background-color: #e2e8f0; /* cool-gray-200 */
-             border-top: 2px solid #cbd5e1; /* cool-gray-300 */
-             padding: 10px;
-             display: flex;
-             justify-content: center;
-             align-items: center;
-             gap: 10px;
-             min-height: 90px; /* Ensure it has some height */
-             flex-wrap: wrap; /* Allow wrapping on small screens */
+
+        /* Workspace */
+        #workspace-area {
+            flex-grow: 1;
+            position: relative;
+            background-color: #ffffff;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .workspace-shape {
+            position: absolute;
+            border: 2px solid transparent;
+            cursor: move;
+            touch-action: none;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+             /* *** Need z-index for dragging over pattern bar *** */
+            z-index: 5;
+        }
+        .workspace-shape svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            pointer-events: none;
+        }
+        .workspace-shape.selected {
+            border: 2px dashed #3b82f6;
+            z-index: 10;
+        }
+        /* Style for dragging workspace shape */
+        .workspace-shape.dragging {
+            opacity: 0.7;
+            z-index: 1001; /* Ensure it's above toolbar drag */
+        }
+
+
+        /* Calculator Panel */
+        #calculator-panel {
+            width: 300px;
+            background-color: #f8fafc;
+            padding: 1rem;
+            overflow-y: auto;
+            border-left: 1px solid #cbd5e1;
+            flex-shrink: 0;
+            font-size: 0.9rem;
+        }
+        [dir="rtl"] #calculator-panel {
+            border-left: none;
+            border-right: 1px solid #cbd5e1;
+        }
+        #calculator-panel h3 {
+            font-weight: bold;
+            margin-bottom: 0.75rem;
+            color: #1e293b;
+            font-size: 1rem;
+        }
+         #calculator-panel label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+            color: #475569;
+         }
+         #calculator-panel input[type="number"],
+         #calculator-panel select {
+            width: 100%;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+            box-sizing: border-box;
+         }
+         #calculator-panel input:focus,
+         #calculator-panel select:focus {
+            outline: 2px solid #60a5fa;
+            outline-offset: 1px;
+            border-color: #93c5fd;
+         }
+         #formula-display, #result-display {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background-color: #e0f2fe;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #075985;
+            line-height: 1.6;
+         }
+         #result-display {
+             background-color: #dcfce7;
+             border-color: #bbf7d0;
+             color: #15803d;
+             font-weight: bold;
+         }
+         .calc-section {
+             margin-bottom: 1.5rem;
+             padding-bottom: 1rem;
+             border-bottom: 1px dashed #e2e8f0;
+         }
+        .calc-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+
+        /* Pattern Bar */
+        #pattern-bar {
+            height: 90px;
+            background-color: #e2e8f0;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-top: 1px solid #cbd5e1;
+            overflow-x: auto;
+            flex-shrink: 0;
         }
         .pattern-slot {
-            width: 65px; height: 65px;
-            border: 2px dashed #a0aec0; /* cool-gray-400 */
-            background-color: #f7fafc; /* cool-gray-50 */
-            display: flex; justify-content: center; align-items: center;
-            border-radius: 4px;
-            position: relative; /* For potential clear button */
-            transition: background-color 0.2s;
+            width: 60px;
+            height: 60px;
+            background-color: #f1f5f9;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            position: relative;
         }
-        .pattern-slot.over { /* Style when dragging over */
-             background-color: #bee3f8; /* blue-200 */
-             border-style: solid;
-        }
-        .pattern-slot svg { /* Style for shapes inside slots */
-            width: 80%; height: 80%;
-            opacity: 0.9;
-        }
-        /* Optional: Style for clearing a slot */
-        .clear-slot-btn {
+        .pattern-slot.drop-active { border-color: #60a5fa; background-color: #dbeafe; }
+        .pattern-slot.drop-target { border-color: #34d399; background-color: #a7f3d0; border-style: solid; }
+        .pattern-slot svg { width: 60%; height: 60%; pointer-events: none; }
+        .pattern-slot .remove-btn {
             position: absolute; top: -5px; right: -5px;
-            width: 18px; height: 18px; border-radius: 50%;
-            background-color: #f56565; /* red-500 */ color: white;
-            border: 1px solid white; font-size: 10px; line-height: 16px;
-            text-align: center; cursor: pointer; font-weight: bold;
-            display: none; /* Hidden by default */
+            [dir="rtl"] & { right: auto; left: -5px; }
+            width: 18px; height: 18px; background-color: #ef4444; color: white;
+            border-radius: 50%; border: 1px solid white; font-size: 10px; line-height: 16px;
+            text-align: center; cursor: pointer; display: none; z-index: 5;
         }
-        .pattern-slot:hover .clear-slot-btn {
-            display: block; /* Show on hover */
-        }
+        .pattern-slot:hover .remove-btn { display: block; }
 
-        #pattern-feedback {
-            text-align: center;
-            margin-top: 5px;
-            font-weight: bold;
-            min-height: 1.5em; /* Reserve space */
+
+        /* Buttons */
+        .btn { padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s ease; border: 1px solid transparent; }
+        .btn-primary { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-secondary { background-color: #64748b; color: white; border-color: #64748b; }
+        .btn-secondary:hover { background-color: #475569; }
+        .btn-success { background-color: #22c55e; color: white; border-color: #22c55e; }
+        .btn-success:hover { background-color: #16a34a; }
+        .btn-danger { background-color: #ef4444; color: white; border-color: #ef4444; }
+        .btn-danger:hover { background-color: #dc2626; }
+
+        /* Language Toggle */
+        #lang-toggle { position: absolute; top: 10px; right: 10px; z-index: 50; }
+        [dir="rtl"] #lang-toggle { right: auto; left: 10px; }
+
+        /* Feedback Message */
+        #feedback-message {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            padding: 0.75rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            font-weight: 500; z-index: 100; display: none; transition: opacity 0.3s ease;
         }
+        #feedback-message.success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        #feedback-message.error { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+        /* InteractJS Resize Handles */
+        .resize-handle {
+          position: absolute; width: 10px; height: 10px; background-color: #3b82f6;
+          border: 1px solid white; border-radius: 50%; z-index: 20; display: none;
+        }
+        .workspace-shape.selected .resize-handle { display: block; }
+        .resize-handle-top-left { top: -5px; left: -5px; cursor: nwse-resize; }
+        .resize-handle-top-right { top: -5px; right: -5px; cursor: nesw-resize; }
+        .resize-handle-bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
+        .resize-handle-bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
+        .resize-handle-top { top: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+        .resize-handle-bottom { bottom: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+        .resize-handle-left { left: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+        .resize-handle-right { right: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+
+        .workspace-shape[data-shape-type="circle"] .resize-handle-top,
+        .workspace-shape[data-shape-type="circle"] .resize-handle-bottom,
+        .workspace-shape[data-shape-type="circle"] .resize-handle-left,
+        .workspace-shape[data-shape-type="circle"] .resize-handle-right { display: none !important; }
 
     </style>
 </head>
-<body class="bg-gray-100">
-    <div class="flex flex-col h-screen">
+<body>
 
-        <div class="flex flex-col md:flex-row flex-grow overflow-hidden">
-            <div id="side-panel" class="w-full md:w-64 lg:w-72 bg-gray-200 p-4 border-t-2 md:border-t-0 md:border-l-2 border-gray-300 order-last md:order-first flex flex-col space-y-4 overflow-y-auto">
-                <div>
-                    <h3 class="text-lg font-semibold text-center text-gray-700 mb-2">الأشكال</h3>
-                    <div class="flex flex-wrap justify-center gap-2">
-                        <div class="shape-template" draggable="true" data-shape="square"> <svg viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" fill="#e53e3e"/></svg> </div>
-                        <div class="shape-template" draggable="true" data-shape="rectangle"> <svg viewBox="0 0 100 100"><rect x="10" y="25" width="80" height="50" fill="#3182ce"/></svg> </div>
-                        <div class="shape-template" draggable="true" data-shape="triangle"> <svg viewBox="0 0 100 100"><polygon points="50,10 90,90 10,90" fill="#38a169"/></svg> </div>
-                        <div class="shape-template" draggable="true" data-shape="circle"> <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#f6e05e"/></svg> </div>
-                        <div class="shape-template" draggable="true" data-shape="rhombus"> <svg viewBox="0 0 100 100"><polygon points="50,10 90,50 50,90 10,50" fill="#805ad5"/></svg> </div>
-                        <div class="shape-template" draggable="true" data-shape="parallelogram"> <svg viewBox="0 0 100 100"><polygon points="25,10 100,10 75,90 0,90" fill="#ed8936"/></svg> </div>
-                        <div class="shape-template" draggable="true" data-shape="trapezoid"> <svg viewBox="0 0 100 100"><polygon points="20,10 80,10 100,90 0,90" fill="#dd6b20"/></svg> </div>
-                    </div>
+    <button id="lang-toggle" class="btn btn-secondary" data-lang="en">Switch to عربي</button>
+
+    <div class="main-container">
+
+        <div id="shape-toolbar">
+            <div class="toolbar-shape-container">
+                <div class="toolbar-shape draggable" data-shape-type="square" title="Square / مربع">
+                    <svg viewBox="0 0 100 100" fill="#f87171"><rect x="10" y="10" width="80" height="80"/></svg>
                 </div>
-
-                <div>
-                    <h3 class="text-lg font-semibold text-center text-gray-700 mb-2">أدوات القياس</h3>
-                    <div class="space-y-1 text-center">
-                        <label class="inline-flex items-center mx-2"> <input type="radio" class="form-radio text-blue-600" name="measurementType" value="area"> <span class="mr-2">المساحة</span> </label>
-                        <label class="inline-flex items-center mx-2"> <input type="radio" class="form-radio text-blue-600" name="measurementType" value="perimeter"> <span class="mr-2">المحيط</span> </label>
-                    </div>
+                <div class="toolbar-color-palette"></div> </div>
+            <div class="toolbar-shape-container">
+                <div class="toolbar-shape draggable" data-shape-type="rectangle" title="Rectangle / مستطيل">
+                    <svg viewBox="0 0 100 100" fill="#60a5fa"><rect x="10" y="20" width="80" height="60"/></svg>
                 </div>
-
-                <div class="flex-grow bg-white border border-gray-300 rounded p-2 overflow-y-auto" id="calculation-display">
-                    <span class="text-gray-500 italic">اختر نوع القياس ثم اضغط على الشكل...</span>
+                 <div class="toolbar-color-palette"></div>
+            </div>
+            <div class="toolbar-shape-container">
+                <div class="toolbar-shape draggable" data-shape-type="triangle" title="Triangle / مثلث">
+                    <svg viewBox="0 0 100 100" fill="#34d399"><polygon points="50,10 90,90 10,90"/></svg>
                 </div>
+                 <div class="toolbar-color-palette"></div>
+            </div>
+            <div class="toolbar-shape-container">
+                <div class="toolbar-shape draggable" data-shape-type="circle" title="Circle / دائرة">
+                    <svg viewBox="0 0 100 100" fill="#facc15"><circle cx="50" cy="50" r="40"/></svg>
+                </div>
+                 <div class="toolbar-color-palette"></div>
+            </div>
+             <div class="toolbar-shape-container">
+                <div class="toolbar-shape draggable" data-shape-type="rhombus" title="Rhombus / معين">
+                    <svg viewBox="0 0 100 100" fill="#c084fc"><polygon points="50,10 90,50 50,90 10,50"/></svg>
+                </div>
+                 <div class="toolbar-color-palette"></div>
+            </div>
+             <div class="toolbar-shape-container">
+                <div class="toolbar-shape draggable" data-shape-type="parallelogram" title="Parallelogram / متوازي أضلاع">
+                    <svg viewBox="0 0 100 100" fill="#fb923c"><polygon points="25,10 90,10 75,90 10,90"/></svg>
+                </div>
+                 <div class="toolbar-color-palette"></div>
+            </div>
+             <div class="toolbar-shape-container">
+                <div class="toolbar-shape draggable" data-shape-type="trapezoid" title="Trapezoid / شبه منحرف">
+                    <svg viewBox="0 0 100 100" fill="#2dd4bf"><polygon points="20,10 80,10 95,90 5,90"/></svg>
+                </div>
+                 <div class="toolbar-color-palette"></div>
+            </div>
+        </div>
 
-                <button id="calculate-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled> احسب </button>
+        <div id="workspace-area" class="dropzone">
             </div>
 
-            <div id="canvas-area" class="flex-grow relative flex justify-center items-center p-2 md:p-4 overflow-hidden">
-                <canvas id="drawing-canvas"></canvas>
-                </div>
+        <div id="calculator-panel">
+            <h3 data-translate="calculatorTitle">Calculator</h3>
+
+            <div id="shape-info-section" class="calc-section hidden">
+                <p><strong data-translate="selectedShape">Selected Shape:</strong> <span id="selected-shape-name">None</span></p>
+                 </div>
+
+            <div id="calculation-mode-section" class="calc-section hidden">
+                 <label for="calculation-mode" data-translate="calculationModeLabel">Calculation Mode:</label>
+                 <select id="calculation-mode">
+                     <option value="calc_area" data-translate="calcAreaOpt">Calculate Area</option>
+                     <option value="calc_perimeter" data-translate="calcPerimeterOpt">Calculate Perimeter</option>
+                     <option value="find_dimension" data-translate="findDimensionOpt">Find Missing Dimension</option>
+                 </select>
+            </div>
+
+            <div id="inputs-calc" class="calc-section hidden">
+                <h4 class="font-semibold mb-2" data-translate="knownDimensions">Known Dimensions:</h4>
+                 <div id="known-dimensions-inputs"></div>
+            </div>
+
+            <div id="inputs-find" class="calc-section hidden">
+                <h4 class="font-semibold mb-2" data-translate="findMissingDimension">Find Missing Dimension:</h4>
+                 <label for="known-metric" data-translate="knownMetricLabel">Known Metric:</label>
+                 <select id="known-metric">
+                     <option value="area" data-translate="area">Area</option>
+                     <option value="perimeter" data-translate="perimeter">Perimeter</option>
+                 </select>
+                 <label for="known-metric-value" data-translate="knownValueLabel">Known Value:</label>
+                 <input type="number" step="any" id="known-metric-value" placeholder="e.g., 20.5"> <label for="known-dimension-name" data-translate="knownDimensionLabel">Known Dimension:</label>
+                 <select id="known-dimension-name">
+                     </select>
+                 <label for="known-dimension-value" data-translate="knownValueLabel">Known Value:</label>
+                 <input type="number" step="any" id="known-dimension-value" placeholder="e.g., 5.2"> </div>
+
+
+            <div id="solve-button-section" class="calc-section hidden">
+                <button id="solve-button" class="btn btn-primary w-full" data-translate="solveButton">Solve</button>
+            </div>
+
+            <div id="formula-display-section" class="calc-section hidden">
+                 <h4 class="font-semibold mb-2" data-translate="formulaTitle">Formula:</h4>
+                 <div id="formula-display"></div>
+            </div>
+
+            <div id="result-display-section" class="calc-section hidden">
+                <h4 class="font-semibold mb-2" data-translate="resultTitle">Result:</h4>
+                <div id="result-display"></div>
+            </div>
+
+             <div id="no-shape-message" class="text-center text-gray-500">
+                 <p data-translate="noShapeSelected">Drag a shape to the workspace and select it to use the calculator.</p>
+             </div>
+
         </div>
 
-        <div class="w-full order-last">
-            <div id="pattern-box">
-                </div>
-             <div id="pattern-controls" class="text-center py-2 bg-gray-200">
-                 <button id="check-pattern-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled> تحقق من النمط </button>
-                 <div id="pattern-feedback" class="text-sm text-gray-700"></div>
-             </div>
-        </div>
     </div>
 
+    <div id="pattern-bar">
+        <span class="font-semibold mr-4 self-center" data-translate="patternBarLabel">Pattern:</span>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <button id="check-pattern-button" class="btn btn-success ml-auto self-center" data-translate="checkPatternButton">Check Pattern</button>
+        <button id="clear-pattern-button" class="btn btn-danger ml-2 self-center" data-translate="clearPatternButton">Clear</button>
+    </div>
+
+    <div id="feedback-message"></div>
+
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Get DOM Elements ---
-            const canvas = document.getElementById('drawing-canvas');
-            const ctx = canvas.getContext('2d');
-            const paletteShapes = document.querySelectorAll('.shape-template[draggable="true"]');
-            const sidePanel = document.getElementById('side-panel');
-            const canvasArea = document.getElementById('canvas-area');
-            const calculationDisplay = document.getElementById('calculation-display');
-            const calculateButton = document.getElementById('calculate-button');
-            const measurementRadios = document.querySelectorAll('input[name="measurementType"]');
-            const patternBox = document.getElementById('pattern-box');
-            const checkPatternButton = document.getElementById('check-pattern-button');
-            const patternFeedback = document.getElementById('pattern-feedback');
-
-            // --- Constants and Configuration ---
-            const CM_PER_PIXEL = 0.1;
-            const HANDLE_SIZE = 12;
-            const MIN_SHAPE_SIZE = 25; // Increased minimum size slightly
-            const LABEL_FONT = '12px Cairo';
-            const LABEL_COLOR = '#333';
-            const SELECTED_BORDER_COLOR = '#3182ce';
-            const SELECTED_BORDER_WIDTH = 2;
-            const PATTERN_SLOTS = 6; // Number of slots in the pattern box
-
-            // --- Arabic Translations ---
-            const arabicNumbers = { 0: '٠', 1: '١', 2: '٢', 3: '٣', 4: '٤', 5: '٥', 6: '٦', 7: '٧', 8: '٨', 9: '٩' };
-            const formulaTexts = {
-                area: "المساحة", perimeter: "المحيط",
-                square: { area: " = الضلع × الضلع", perimeter: " = ٤ × الضلع" },
-                rectangle: { area: " = الطول × العرض", perimeter: " = ٢ × (الطول + العرض)" },
-                triangle: { area: " = ٠٫٥ × القاعدة × الارتفاع", perimeter: " = مجموع أطوال الأضلاع" },
-                circle: { area: " = π × نصف القطر²", perimeter: " = ٢ × π × نصف القطر" }, // π ≈ ٣٫١٤
-                rhombus: { area: " = ٠٫٥ × القطر الأول × القطر الثاني", perimeter: " = ٤ × الضلع" },
-                parallelogram: { area: " = القاعدة × الارتفاع", perimeter: " = ٢ × (الضلع الأول + الضلع الثاني)" },
-                trapezoid: { area: " = ٠٫٥ × (القاعدة الأولى + القاعدة الثانية) × الارتفاع", perimeter: " = مجموع أطوال الأضلاع" }
-            };
-            const unitTexts = { area: " سم²", perimeter: " سم" };
-            const patternMessages = {
-                correct: "عمل رائع! هذا نمط صحيح.",
-                incorrect: "حاول مرة أخرى، هذا ليس نمطًا متكررًا.",
-                prompt: "اسحب الأشكال هنا لتكوين نمط متكرر."
-            };
-
-            // --- Utility Functions ---
-            function toArabicNumber(num) {
-                if (typeof num !== 'number' || isNaN(num)) return '?';
-                const numStr = String(Math.round(num));
-                return numStr.split('').map(char => arabicNumbers[char] || char).join('');
+        // --- Translations ---
+        const translations = {
+            en: {
+                calculatorTitle: "Calculator", selectedShape: "Selected Shape:", dimensions: "Dimensions:",
+                shapeColorLabel: "Shape Color:", calculationModeLabel: "Calculation Mode:",
+                calcAreaOpt: "Calculate Area", calcPerimeterOpt: "Calculate Perimeter",
+                findDimensionOpt: "Find Missing Dimension",
+                knownDimensions: "Enter Dimensions:", findMissingDimension: "Find Missing Dimension:",
+                knownMetricLabel: "Known Metric:", area: "Area", perimeter: "Perimeter", knownValueLabel: "Known Value:",
+                knownDimensionLabel: "Known Dimension:", solveButton: "Solve", formulaTitle: "Formula:", resultTitle: "Result:",
+                noShapeSelected: "Drag a shape to the workspace and select it to use the calculator.",
+                patternBarLabel: "Pattern:", checkPatternButton: "Check Pattern", clearPatternButton: "Clear",
+                feedbackPatternCorrect: "Correct pattern!", feedbackPatternIncorrect: "Not a valid repeating pattern, try again.",
+                feedbackShapeRemoved: "Shape removed from pattern.", switchToAr: "Switch to عربي", switchToEn: "Switch to English",
+                square: "Square", rectangle: "Rectangle", triangle: "Triangle", circle: "Circle", rhombus: "Rhombus",
+                parallelogram: "Parallelogram", trapezoid: "Trapezoid", side: "Side", length: "Length", width: "Width",
+                base: "Base", height: "Height", radius: "Radius", sideA: "Side A", sideB: "Side B", sideC: "Side C",
+                sideD: "Side D", diagonal1: "Diagonal 1 (d1)", diagonal2: "Diagonal 2 (d2)", cm: "cm", cmSq: "cm²",
+                areaFormula: "Area Formula", perimeterFormula: "Perimeter Formula", calculationSteps: "Calculation Steps:",
+                missingDimensionResult: "The missing dimension ({dim}) is {value} {unit}.",
+                valueMissing: "Please enter all required values.", invalidInput: "Invalid input values.",
+                cannotSolve: "Cannot solve with the given information.", selectShapeFirst: "Please select a shape on the workspace first.",
+            },
+            ar: {
+                calculatorTitle: "الحاسبة", selectedShape: "الشكل المحدد:", dimensions: "الأبعاد:",
+                shapeColorLabel: "لون الشكل:", calculationModeLabel: "وضع الحساب:",
+                calcAreaOpt: "حساب المساحة", calcPerimeterOpt: "حساب المحيط",
+                findDimensionOpt: "إيجاد البعد المفقود",
+                knownDimensions: "أدخل الأبعاد:", findMissingDimension: "إيجاد البعد المفقود:",
+                knownMetricLabel: "المقياس المعروف:", area: "المساحة", perimeter: "المحيط", knownValueLabel: "القيمة المعروفة:",
+                knownDimensionLabel: "البعد المعروف:", solveButton: "حل", formulaTitle: "الصيغة:", resultTitle: "النتيجة:",
+                noShapeSelected: "اسحب شكلاً إلى مساحة العمل وحدده لاستخدام الحاسبة.",
+                patternBarLabel: "النمط:", checkPatternButton: "تحقق من النمط", clearPatternButton: "مسح",
+                feedbackPatternCorrect: "نمط صحيح!", feedbackPatternIncorrect: "ليس نمطًا متكررًا صالحًا، حاول مرة أخرى.",
+                feedbackShapeRemoved: "تمت إزالة الشكل من النمط.", switchToAr: "التبديل إلى عربي", switchToEn: "التبديل إلى الإنجليزية",
+                square: "مربع", rectangle: "مستطيل", triangle: "مثلث", circle: "دائرة", rhombus: "معين",
+                parallelogram: "متوازي أضلاع", trapezoid: "شبه منحرف", side: "ضلع", length: "طول", width: "عرض",
+                base: "قاعدة", height: "ارتفاع", radius: "نصف القطر", sideA: "ضلع أ", sideB: "ضلع ب", sideC: "ضلع ج",
+                sideD: "ضلع د", diagonal1: "القطر 1 (ق1)", diagonal2: "القطر 2 (ق2)", cm: "سم", cmSq: "سم²",
+                areaFormula: "صيغة المساحة", perimeterFormula: "صيغة المحيط", calculationSteps: "خطوات الحساب:",
+                missingDimensionResult: "البعد المفقود ({dim}) هو {value} {unit}.",
+                valueMissing: "الرجاء إدخال جميع القيم المطلوبة.", invalidInput: "قيم الإدخال غير صالحة.",
+                cannotSolve: "لا يمكن الحل بالمعلومات المعطاة.", selectShapeFirst: "يرجى تحديد شكل في مساحة العمل أولاً.",
             }
-            function showCalcMessage(htmlContent) { calculationDisplay.innerHTML = htmlContent; }
-            function showPatternMessage(text) { patternFeedback.textContent = text; }
-            function distance(p1, p2) { return Math.hypot(p1.x - p2.x, p1.y - p2.y); }
-            function getVector(p1, p2) { return { x: p2.x - p1.x, y: p2.y - p1.y }; }
-            function crossProduct(v1, v2) { return v1.x * v2.y - v1.y * v2.x; }
+        };
 
-            // --- State Variables ---
-            let shapesOnCanvas = []; // Max 1 shape
-            let selectedShape = null;
-            let draggedShapeTemplate = null; // Type ('square', 'circle'...) being dragged from palette
-            let interaction = { type: null, target: null, startX: 0, startY: 0, shapeStartX: 0, shapeStartY: 0, shapeStartW: 0, shapeStartH: 0, shapeStartR: 0, targetElement: null };
-            let nextShapeId = 0;
-            let selectedMeasurementType = null;
-            let shapeToMeasure = null;
-            let patternSlotsData = Array(PATTERN_SLOTS).fill(null); // Store shape type in each slot
+        // --- Global State ---
+        let currentLang = 'en';
+        let selectedShapeElement = null;
+        let shapeCounter = 0;
+        let patternSequence = [];
+        const availableToolbarColors = ['#f87171', '#60a5fa', '#34d399', '#facc15', '#c084fc'];
 
-            // --- Canvas Resizing ---
-            function resizeCanvas() {
-                const rect = canvasArea.getBoundingClientRect();
-                canvas.width = rect.width; canvas.height = rect.height;
-                drawCanvas();
-            }
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas();
+        // --- DOM Elements ---
+        const langToggleButton = document.getElementById('lang-toggle');
+        const htmlElement = document.documentElement;
+        const shapeToolbar = document.getElementById('shape-toolbar');
+        const workspace = document.getElementById('workspace-area');
+        const calculatorPanel = document.getElementById('calculator-panel');
+        const patternBar = document.getElementById('pattern-bar');
+        const patternSlots = patternBar.querySelectorAll('.pattern-slot');
+        const checkPatternButton = document.getElementById('check-pattern-button');
+        const clearPatternButton = document.getElementById('clear-pattern-button');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const noShapeMessage = document.getElementById('no-shape-message');
+        const shapeInfoSection = document.getElementById('shape-info-section');
+        const calculationModeSection = document.getElementById('calculation-mode-section');
+        const inputsCalcSection = document.getElementById('inputs-calc');
+        const inputsFindSection = document.getElementById('inputs-find');
+        const solveButtonSection = document.getElementById('solve-button-section');
+        const formulaDisplaySection = document.getElementById('formula-display-section');
+        const resultDisplaySection = document.getElementById('result-display-section');
+        const selectedShapeNameEl = document.getElementById('selected-shape-name');
+        const calculationModeSelect = document.getElementById('calculation-mode');
+        const knownDimensionsInputsDiv = document.getElementById('known-dimensions-inputs');
+        const knownMetricSelect = document.getElementById('known-metric');
+        const knownMetricValueInput = document.getElementById('known-metric-value');
+        const knownDimensionNameSelect = document.getElementById('known-dimension-name');
+        const knownDimensionValueInput = document.getElementById('known-dimension-value');
+        const solveButton = document.getElementById('solve-button');
+        const formulaDisplayDiv = document.getElementById('formula-display');
+        const resultDisplayDiv = document.getElementById('result-display');
 
-            // --- Shape Definitions & Initial State ---
-            // Added 'vertices' for polygon shapes
-            // Circle: x,y is center
-            // Square/Rect: x,y is top-left
-            // Triangle: x,y is top vertex
-            // Rhombus: x,y is center, width/height are diagonals
-            // Parallelogram: x,y is top-left, width, height, skewOffset (horizontal shift of top relative to bottom)
-            // Trapezoid: x,y is center of top base, topWidth, bottomWidth, height
 
-            // --- Core Drawing ---
-            function drawCanvas() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                shapesOnCanvas.forEach(shape => {
-                    drawShape(shape);
-                    drawDimensionLabels(shape);
-                    if (shape === selectedShape) {
-                        drawSelectionOutline(shape);
-                        if (!interaction.type?.startsWith('resize')) drawResizeHandles(shape);
-                    }
-                });
-                 if (interaction.type?.startsWith('resize') && selectedShape) drawResizeHandles(selectedShape);
-            }
+        // --- Shape Definitions & Formulas ---
+        const multiplySymbol = '×';
 
-            function drawShape(shape) {
-                ctx.fillStyle = shape.color; ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
-                ctx.beginPath();
-                switch (shape.type) {
-                    case 'square': ctx.rect(shape.x, shape.y, shape.side, shape.side); break;
-                    case 'rectangle': ctx.rect(shape.x, shape.y, shape.width, shape.height); break;
-                    case 'circle': ctx.arc(shape.x, shape.y, shape.r, 0, Math.PI * 2); break;
-                    case 'triangle': // Isosceles
-                        const tHalfBase = shape.width / 2;
-                        ctx.moveTo(shape.x, shape.y); ctx.lineTo(shape.x - tHalfBase, shape.y + shape.height); ctx.lineTo(shape.x + tHalfBase, shape.y + shape.height); ctx.closePath(); break;
-                    case 'rhombus':
-                        const rHalfW = shape.width / 2; const rHalfH = shape.height / 2;
-                        ctx.moveTo(shape.x, shape.y - rHalfH); // Top
-                        ctx.lineTo(shape.x + rHalfW, shape.y); // Right
-                        ctx.lineTo(shape.x, shape.y + rHalfH); // Bottom
-                        ctx.lineTo(shape.x - rHalfW, shape.y); // Left
-                        ctx.closePath(); break;
-                    case 'parallelogram':
-                        const pBottomY = shape.y + shape.height;
-                        ctx.moveTo(shape.x, shape.y); // Top-left
-                        ctx.lineTo(shape.x + shape.width, shape.y); // Top-right
-                        ctx.lineTo(shape.x + shape.width - shape.skewOffset, pBottomY); // Bottom-right
-                        ctx.lineTo(shape.x - shape.skewOffset, pBottomY); // Bottom-left
-                        ctx.closePath(); break;
-                    case 'trapezoid': // Isosceles trapezoid for simplicity
-                        const tpTopHalfW = shape.topWidth / 2; const tpBottomHalfW = shape.bottomWidth / 2; const tpBottomY = shape.y + shape.height;
-                        ctx.moveTo(shape.x - tpTopHalfW, shape.y); // Top-left
-                        ctx.lineTo(shape.x + tpTopHalfW, shape.y); // Top-right
-                        ctx.lineTo(shape.x + tpBottomHalfW, tpBottomY); // Bottom-right
-                        ctx.lineTo(shape.x - tpBottomHalfW, tpBottomY); // Bottom-left
-                        ctx.closePath(); break;
+        const shapeFormulas = {
+            square: {
+                dims: ['side'], getArea: (d) => d.side * d.side, getPerimeter: (d) => 4 * d.side,
+                areaFormula: (l) => `A = ${translations[l].side} ${multiplySymbol} ${translations[l].side}`,
+                perimeterFormula: (l) => `P = 4 ${multiplySymbol} ${translations[l].side}`,
+                findDim: (m, mv, kd, kdv, l) => {
+                    if (m === 'area') { const s = Math.sqrt(mv); return (!isNaN(s) && s > 0) ? { dim: translations[l].side, value: formatNumber(s), steps: [`${translations[l].side} = √${mv} ≈ ${formatNumber(s)}`] } : { error: translations[l].invalidInput }; }
+                    else { const s = mv / 4; return (!isNaN(s) && s > 0) ? { dim: translations[l].side, value: formatNumber(s), steps: [`${translations[l].side} = ${mv} / 4 = ${formatNumber(s)}`] } : { error: translations[l].invalidInput }; }
                 }
-                ctx.fill(); ctx.stroke();
-            }
-
-            function drawSelectionOutline(shape) {
-                ctx.strokeStyle = SELECTED_BORDER_COLOR; ctx.lineWidth = SELECTED_BORDER_WIDTH; ctx.setLineDash([5, 3]);
-                const offset = SELECTED_BORDER_WIDTH / 2;
-                 // Use getVertices to draw outline for polygon shapes
-                 const vertices = getVertices(shape);
-                 if (vertices.length > 0) {
-                     ctx.beginPath();
-                     ctx.moveTo(vertices[0].x, vertices[0].y);
-                     for (let i = 1; i < vertices.length; i++) {
-                         ctx.lineTo(vertices[i].x, vertices[i].y);
-                     }
-                     ctx.closePath();
-                     // TODO: Offset the outline properly (complex for arbitrary polygons)
-                     // Simple bounding box outline for now as fallback
-                     if (shape.type !== 'circle') {
-                          const bounds = getBoundingBox(shape);
-                          ctx.strokeRect(bounds.minX - offset, bounds.minY - offset, bounds.maxX - bounds.minX + 2*offset, bounds.maxY - bounds.minY + 2*offset);
-                     } else { // Circle outline
-                          ctx.beginPath(); ctx.arc(shape.x, shape.y, shape.r + offset, 0, Math.PI * 2); ctx.stroke();
-                     }
-
-                 }
-                ctx.setLineDash([]);
-            }
-
-            function drawDimensionLabels(shape) {
-                ctx.fillStyle = LABEL_COLOR; ctx.font = LABEL_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                let widthCm, heightCm, radiusCm, sideCm, baseCm, sideACm, topBaseCm, bottomBaseCm, slantHeightCm;
-                const vertices = getVertices(shape); // Get vertices for calculations
-
-                switch (shape.type) {
-                    case 'square': sideCm = shape.side * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(sideCm)} سم`, shape.x + shape.side / 2, shape.y - 10); ctx.save(); ctx.translate(shape.x - 10, shape.y + shape.side / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(`${toArabicNumber(sideCm)} سم`, 0, 0); ctx.restore(); break;
-                    case 'rectangle': widthCm = shape.width * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(widthCm)} سم`, shape.x + shape.width / 2, shape.y - 10); ctx.save(); ctx.translate(shape.x - 10, shape.y + shape.height / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(`${toArabicNumber(heightCm)} سم`, 0, 0); ctx.restore(); break;
-                    case 'circle': radiusCm = shape.r * CM_PER_PIXEL; ctx.beginPath(); ctx.moveTo(shape.x, shape.y); ctx.lineTo(shape.x + shape.r, shape.y); ctx.strokeStyle = LABEL_COLOR; ctx.lineWidth = 0.5; ctx.stroke(); ctx.fillText(`نق = ${toArabicNumber(radiusCm)} سم`, shape.x + shape.r / 2, shape.y - 8); break;
-                    case 'triangle': baseCm = shape.width * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; sideACm = Math.hypot(shape.width / 2, shape.height) * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(baseCm)} سم`, shape.x, shape.y + shape.height + 10); ctx.save(); ctx.translate(shape.x - shape.width / 4, shape.y + shape.height / 2); ctx.rotate(Math.atan2(shape.height, -shape.width/2)); ctx.fillText(`${toArabicNumber(sideACm)} سم`, 0, -8); ctx.restore(); ctx.save(); ctx.translate(shape.x + shape.width / 4, shape.y + shape.height / 2); ctx.rotate(Math.atan2(shape.height, shape.width/2)); ctx.fillText(`${toArabicNumber(sideACm)} سم`, 0, -8); ctx.restore(); break;
-                    case 'rhombus': sideCm = distance(vertices[0], vertices[1]) * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(sideCm)} سم`, (vertices[0].x + vertices[1].x)/2, (vertices[0].y + vertices[1].y)/2 - 8); break; // Label one side
-                    case 'parallelogram': sideACm = shape.width * CM_PER_PIXEL; sideBCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(sideACm)} سم`, shape.x + shape.width / 2, shape.y - 10); ctx.save(); ctx.translate((vertices[1].x+vertices[2].x)/2 - 5, (vertices[1].y+vertices[2].y)/2); ctx.rotate(Math.atan2(shape.height, -shape.skewOffset)); ctx.fillText(`${toArabicNumber(sideBCm)} سم`, 0, -8); ctx.restore(); break;
-                    case 'trapezoid': topBaseCm = shape.topWidth * CM_PER_PIXEL; bottomBaseCm = shape.bottomWidth * CM_PER_PIXEL; slantHeightCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; ctx.fillText(`${toArabicNumber(topBaseCm)} سم`, shape.x, shape.y - 10); ctx.fillText(`${toArabicNumber(bottomBaseCm)} سم`, shape.x, shape.y + shape.height + 10); ctx.save(); ctx.translate((vertices[1].x+vertices[2].x)/2 + 5, (vertices[1].y+vertices[2].y)/2); ctx.rotate(Math.atan2(shape.height, (shape.bottomWidth-shape.topWidth)/2)); ctx.fillText(`${toArabicNumber(slantHeightCm)} سم`, 0, -8); ctx.restore(); break; // Label top, bottom, one slant side
-                }
-            }
-
-            // --- Drag and Drop ---
-            paletteShapes.forEach(el => {
-                el.addEventListener('dragstart', (e) => {
-                    draggedShapeTemplate = e.target.dataset.shape;
-                    e.dataTransfer.setData('text/plain', draggedShapeTemplate);
-                    e.dataTransfer.effectAllowed = 'copy';
-                });
-                 el.addEventListener('dragend', () => { draggedShapeTemplate = null; });
-            });
-
-            // --- Canvas Drop Target ---
-            canvas.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
-            canvas.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const shapeType = e.dataTransfer.getData('text/plain');
-                if (!shapeType) return;
-                shapesOnCanvas = []; removeResizeHandles(); selectedShape = null; clearMeasurement(); // Clear canvas for new shape
-
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left; const y = e.clientY - rect.top;
-                let newShape; const defaultSize = 80; const defaultColor = `hsl(${Math.random() * 360}, 70%, 70%)`;
-
-                switch (shapeType) {
-                    case 'square': newShape = { id: nextShapeId++, type: 'square', x: x - defaultSize/2, y: y - defaultSize/2, side: defaultSize, color: defaultColor, isSelected: false }; break;
-                    case 'rectangle': newShape = { id: nextShapeId++, type: 'rectangle', x: x - defaultSize*0.75, y: y - defaultSize/2, width: defaultSize * 1.5, height: defaultSize, color: defaultColor, isSelected: false }; break;
-                    case 'circle': newShape = { id: nextShapeId++, type: 'circle', x: x, y: y, r: defaultSize / 2, color: defaultColor, isSelected: false }; break;
-                    case 'triangle': newShape = { id: nextShapeId++, type: 'triangle', x: x, y: y - defaultSize/2, width: defaultSize * 1.2, height: defaultSize, color: defaultColor, isSelected: false }; break;
-                    case 'rhombus': newShape = { id: nextShapeId++, type: 'rhombus', x: x, y: y, width: defaultSize * 1.2, height: defaultSize, color: defaultColor, isSelected: false }; break; // width/height are diagonals
-                    case 'parallelogram': newShape = { id: nextShapeId++, type: 'parallelogram', x: x - defaultSize*0.75, y: y - defaultSize/2, width: defaultSize * 1.5, height: defaultSize, skewOffset: defaultSize * 0.3, color: defaultColor, isSelected: false }; break;
-                    case 'trapezoid': newShape = { id: nextShapeId++, type: 'trapezoid', x: x, y: y - defaultSize/2, topWidth: defaultSize * 0.8, bottomWidth: defaultSize * 1.4, height: defaultSize, color: defaultColor, isSelected: false }; break; // x,y is center of top base
-                    default: return;
-                }
-                shapesOnCanvas.push(newShape);
-                selectShape(newShape);
-            });
-
-            // --- Shape Selection & Hit Testing ---
-            function selectShape(shapeToSelect) {
-                if (selectedShape === shapeToSelect) return;
-                if (selectedShape) { selectedShape.isSelected = false; removeResizeHandles(); }
-                selectedShape = shapeToSelect;
-                if (selectedShape) { selectedShape.isSelected = true; createResizeHandles(selectedShape); }
-                clearMeasurement();
-                drawCanvas();
-            }
-
-            function getShapeAtPoint(x, y) {
-                if (shapesOnCanvas.length === 0) return null;
-                const shape = shapesOnCanvas[0]; // Only one shape
-                const vertices = getVertices(shape);
-
-                if (shape.type === 'circle') {
-                    if (distance({x, y}, {x: shape.x, y: shape.y}) <= shape.r) return shape;
-                } else if (vertices.length > 0) {
-                    // Point-in-polygon test (ray casting algorithm)
-                    let inside = false;
-                    for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-                        const xi = vertices[i].x, yi = vertices[i].y;
-                        const xj = vertices[j].x, yj = vertices[j].y;
-                        const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-                        if (intersect) inside = !inside;
-                    }
-                    if (inside) return shape;
-                }
-                return null;
-            }
-
-            // --- Canvas Interaction ---
-            function getEventCoordinates(e) {
-                const rect = canvas.getBoundingClientRect();
-                const clientX = e.touches?.[0]?.clientX ?? e.clientX;
-                const clientY = e.touches?.[0]?.clientY ?? e.clientY;
-                return { x: clientX - rect.left, y: clientY - rect.top };
-            }
-
-            function handleInteractionStart(e) {
-                if (e.target !== canvas && !e.target.classList.contains('resize-handle')) return;
-                if (e.type === 'touchstart') e.preventDefault();
-                const coords = getEventCoordinates(e);
-                interaction.startX = coords.x; interaction.startY = coords.y; interaction.type = null;
-
-                if (e.target.classList.contains('resize-handle')) {
-                    if (!selectedShape) return;
-                    interaction.type = 'resize'; interaction.target = e.target.dataset.handle; interaction.targetElement = e.target;
-                    interaction.shapeStartX = selectedShape.x; interaction.shapeStartY = selectedShape.y;
-                    interaction.shapeStartW = selectedShape.width ?? selectedShape.side ?? selectedShape.topWidth ?? (selectedShape.r * 2); // Use appropriate width property
-                    interaction.shapeStartH = selectedShape.height ?? selectedShape.side ?? (selectedShape.r * 2);
-                    interaction.shapeStartR = selectedShape.r;
-                    interaction.shapeStartSkew = selectedShape.skewOffset;
-                    interaction.shapeStartBottomW = selectedShape.bottomWidth;
-                    e.target.style.cursor = 'grabbing'; canvas.style.cursor = e.target.style.cursor;
-                    return;
-                }
-
-                const clickedShape = getShapeAtPoint(coords.x, coords.y);
-                if (clickedShape) {
-                    if (clickedShape !== selectedShape) selectShape(clickedShape);
-                    interaction.type = 'drag-shape'; interaction.target = clickedShape;
-                    interaction.shapeStartX = clickedShape.x; interaction.shapeStartY = clickedShape.y;
-                    canvas.style.cursor = 'grabbing';
-                    if (selectedMeasurementType) prepareCalculation(clickedShape);
-                } else {
-                    selectShape(null); canvas.style.cursor = 'default';
-                }
-            }
-
-            function handleInteractionMove(e) {
-                if (!interaction.type) return;
-                if (e.type === 'touchmove') e.preventDefault();
-                const coords = getEventCoordinates(e);
-                const dx = coords.x - interaction.startX; const dy = coords.y - interaction.startY;
-
-                if (interaction.type === 'drag-shape' && interaction.target) {
-                    interaction.target.x = interaction.shapeStartX + dx;
-                    interaction.target.y = interaction.shapeStartY + dy;
-                    updateResizeHandles(interaction.target); drawCanvas();
-                } else if (interaction.type === 'resize' && selectedShape) {
-                    resizeShape(selectedShape, interaction.target, dx, dy); // Pass handle name
-                    updateResizeHandles(selectedShape);
-                    if (shapeToMeasure === selectedShape && selectedMeasurementType) prepareCalculation(selectedShape, false);
-                    drawCanvas();
-                }
-            }
-
-            function handleInteractionEnd(e) {
-                if (interaction.type === 'resize' && interaction.targetElement) {
-                     const handleName = interaction.targetElement.dataset.handle;
-                     const cursorClass = Array.from(interaction.targetElement.classList).find(cls => cls !== 'resize-handle');
-                     interaction.targetElement.style.cursor = cursorClass ? window.getComputedStyle(interaction.targetElement).cursor : 'grab';
-                }
-                if (shapeToMeasure && interaction.type) calculateButton.disabled = false;
-                interaction.type = null; interaction.target = null; interaction.targetElement = null;
-                canvas.style.cursor = 'default';
-                drawCanvas();
-            }
-
-            // Attach Interaction Listeners
-            canvas.addEventListener('mousedown', handleInteractionStart);
-            canvas.addEventListener('mousemove', handleInteractionMove);
-            canvas.addEventListener('mouseup', handleInteractionEnd);
-            canvas.addEventListener('mouseleave', handleInteractionEnd);
-            canvas.addEventListener('touchstart', handleInteractionStart, { passive: false });
-            canvas.addEventListener('touchmove', handleInteractionMove, { passive: false });
-            canvas.addEventListener('touchend', handleInteractionEnd);
-            canvas.addEventListener('touchcancel', handleInteractionEnd);
-            canvasArea.addEventListener('mousedown', handleInteractionStart); // Use delegation
-            canvasArea.addEventListener('touchstart', handleInteractionStart, { passive: false });
-
-            // --- Resizing ---
-            function createResizeHandles(shape) {
-                removeResizeHandles();
-                const handlePositions = getHandlePositions(shape);
-                for (const handleName in handlePositions) {
-                    const pos = handlePositions[handleName];
-                    const handle = document.createElement('div');
-                    handle.className = `resize-handle ${handleName}`; handle.dataset.handle = handleName;
-                    handle.style.left = `${pos.x - HANDLE_SIZE / 2}px`; handle.style.top = `${pos.y - HANDLE_SIZE / 2}px`;
-                    handle.style.position = 'absolute'; canvasArea.appendChild(handle);
-                }
-            }
-            function removeResizeHandles() { canvasArea.querySelectorAll('.resize-handle').forEach(h => h.remove()); }
-            function updateResizeHandles(shape) {
-                const handles = canvasArea.querySelectorAll('.resize-handle'); if (handles.length === 0 || !shape) return;
-                const handlePositions = getHandlePositions(shape);
-                handles.forEach(handle => {
-                    const handleName = handle.dataset.handle; const pos = handlePositions[handleName];
-                    if (pos) { handle.style.left = `${pos.x - HANDLE_SIZE / 2}px`; handle.style.top = `${pos.y - HANDLE_SIZE / 2}px`; }
-                    else { handle.remove(); }
-                });
-            }
-
-            // Helper to get vertices for polygon shapes
-            function getVertices(shape) {
-                const vertices = [];
-                let x = shape.x, y = shape.y;
-                switch (shape.type) {
-                    case 'square': vertices.push({x:x, y:y}, {x:x+shape.side, y:y}, {x:x+shape.side, y:y+shape.side}, {x:x, y:y+shape.side}); break;
-                    case 'rectangle': vertices.push({x:x, y:y}, {x:x+shape.width, y:y}, {x:x+shape.width, y:y+shape.height}, {x:x, y:y+shape.height}); break;
-                    case 'triangle': const tHalfBase = shape.width / 2; vertices.push({x:x, y:y}, {x:x+tHalfBase, y:y+shape.height}, {x:x-tHalfBase, y:y+shape.height}); break; // Order for drawing/hit-test
-                    case 'rhombus': const rHalfW = shape.width / 2; const rHalfH = shape.height / 2; vertices.push({x:x, y:y-rHalfH}, {x:x+rHalfW, y:y}, {x:x, y:y+rHalfH}, {x:x-rHalfW, y:y}); break;
-                    case 'parallelogram': const pBottomY = shape.y + shape.height; vertices.push({x:x, y:y}, {x:x+shape.width, y:y}, {x:x+shape.width-shape.skewOffset, y:pBottomY}, {x:x-shape.skewOffset, y:pBottomY}); break;
-                    case 'trapezoid': const tpTopHalfW = shape.topWidth / 2; const tpBottomHalfW = shape.bottomWidth / 2; const tpBottomY = shape.y + shape.height; vertices.push({x:x-tpTopHalfW, y:y}, {x:x+tpTopHalfW, y:y}, {x:x+tpBottomHalfW, y:tpBottomY}, {x:x-tpBottomHalfW, y:tpBottomY}); break;
-                    // Circle doesn't use vertices in this way
-                }
-                return vertices;
-            }
-
-             // Helper to get bounding box
-             function getBoundingBox(shape) {
-                 const vertices = getVertices(shape);
-                 if (shape.type === 'circle') {
-                     return { minX: shape.x - shape.r, minY: shape.y - shape.r, maxX: shape.x + shape.r, maxY: shape.y + shape.r };
-                 }
-                 if (vertices.length === 0) return { minX: shape.x, minY: shape.y, maxX: shape.x, maxY: shape.y }; // Fallback
-
-                 let minX = vertices[0].x, minY = vertices[0].y, maxX = vertices[0].x, maxY = vertices[0].y;
-                 for (let i = 1; i < vertices.length; i++) {
-                     minX = Math.min(minX, vertices[i].x); minY = Math.min(minY, vertices[i].y);
-                     maxX = Math.max(maxX, vertices[i].x); maxY = Math.max(maxY, vertices[i].y);
-                 }
-                 return { minX, minY, maxX, maxY };
-             }
-
-
-            function getHandlePositions(shape) {
-                // Calculates handle positions, using vertices for polygons
-                const positions = {};
-                const vertices = getVertices(shape); // Get calculated vertices
-
-                switch (shape.type) {
-                    case 'square':
-                    case 'rectangle':
-                         positions.nw = vertices[0]; positions.ne = vertices[1];
-                         positions.se = vertices[2]; positions.sw = vertices[3]; break;
-                    case 'circle': positions.e = { x: shape.x + shape.r, y: shape.y }; break; // Center x,y
-                    case 'triangle': positions.n = vertices[0]; positions.se = vertices[1]; positions.sw = vertices[2]; break; // Top, bottom-right, bottom-left
-                    case 'rhombus': // Handles at the 4 vertices
-                         positions.vertex0 = vertices[0]; positions.vertex1 = vertices[1];
-                         positions.vertex2 = vertices[2]; positions.vertex3 = vertices[3]; break;
-                    case 'parallelogram': // Handles at the 4 vertices
-                         positions.vertex0 = vertices[0]; positions.vertex1 = vertices[1];
-                         positions.vertex2 = vertices[2]; positions.vertex3 = vertices[3]; break;
-                    case 'trapezoid': // Handles at the 4 vertices
-                         positions.vertex0 = vertices[0]; positions.vertex1 = vertices[1];
-                         positions.vertex2 = vertices[2]; positions.vertex3 = vertices[3]; break;
-                }
-                return positions;
-            }
-
-             // --- UPDATED resizeShape function ---
-             function resizeShape(shape, handle, dx, dy) {
-                // Resizes shape based on handle dragged, ensuring minimum size and correct position adjustments
-                const startX = interaction.shapeStartX; const startY = interaction.shapeStartY;
-                const startW = interaction.shapeStartW; const startH = interaction.shapeStartH;
-                const startR = interaction.shapeStartR;
-                const startSkew = interaction.shapeStartSkew;
-                const startTopW = shape.topWidth; // Specific for trapezoid
-                const startBottomW = interaction.shapeStartBottomW; // Specific for trapezoid
-
-                let newX = shape.x, newY = shape.y, newW = shape.width, newH = shape.height, newSide = shape.side, newR = shape.r;
-
-                // --- Handle Specific Resizing ---
-                switch (shape.type) {
-                    case 'square':
-                        let sideChange = 0;
-                        // Determine side change based on handle and largest delta
-                        if (handle === 'se') sideChange = Math.max(dx, dy);
-                        else if (handle === 'nw') sideChange = Math.max(-dx, -dy);
-                        else if (handle === 'ne') sideChange = Math.max(dx, -dy);
-                        else if (handle === 'sw') sideChange = Math.max(-dx, dy);
-
-                        newSide = Math.max(startW + sideChange, MIN_SHAPE_SIZE); // startW holds initial side
-
-                        // Adjust position based on which corner is fixed
-                        if (handle.includes('n')) newY = startY + startH - newSide; else newY = startY;
-                        if (handle.includes('w')) newX = startX + startW - newSide; else newX = startX;
-
-                        shape.side = newSide; shape.x = newX; shape.y = newY;
-                        break;
-
-                    case 'rectangle':
-                        newW = shape.width; newH = shape.height; newX = shape.x; newY = shape.y;
-                        if (handle.includes('e')) newW = Math.max(startW + dx, MIN_SHAPE_SIZE);
-                        if (handle.includes('w')) { newW = Math.max(startW - dx, MIN_SHAPE_SIZE); newX = startX + startW - newW; }
-                        if (handle.includes('s')) newH = Math.max(startH + dy, MIN_SHAPE_SIZE);
-                        if (handle.includes('n')) { newH = Math.max(startH - dy, MIN_SHAPE_SIZE); newY = startY + startH - newH; }
-                        shape.width = newW; shape.height = newH; shape.x = newX; shape.y = newY;
-                        break;
-
-                    case 'circle': // x,y is center
-                         if (handle === 'e') {
-                             const currentHandleX = startX + startR + dx;
-                             newR = Math.max(distance({x: currentHandleX, y: startY}, {x: startX, y: startY}), MIN_SHAPE_SIZE / 2);
-                             shape.r = newR;
-                         }
-                        break;
-
-                     case 'triangle': // x,y is top vertex
-                         newW = shape.width; newH = shape.height; newX = shape.x; newY = shape.y;
-                         if (handle === 'n') { const potentialH = Math.max(startH - dy, MIN_SHAPE_SIZE); newY = startY + startH - potentialH; newH = potentialH; }
-                         else if (handle === 'se') { newW = Math.max(startW + (dx * 2), MIN_SHAPE_SIZE); newH = Math.max(startH + dy, MIN_SHAPE_SIZE); }
-                         else if (handle === 'sw') { const potentialW = Math.max(startW - (dx * 2), MIN_SHAPE_SIZE); newX = startX + (startW - potentialW) / 2; newW = potentialW; newH = Math.max(startH + dy, MIN_SHAPE_SIZE); }
-                         shape.width = newW; shape.height = newH; shape.x = newX; shape.y = newY;
-                         break;
-
-                     case 'rhombus': // x,y is center, w/h are diagonals
-                         newW = shape.width; newH = shape.height;
-                         // vertex0=top, 1=right, 2=bottom, 3=left
-                         if (handle === 'vertex0') newH = Math.max(startH - dy * 2, MIN_SHAPE_SIZE); // Drag top affects height
-                         else if (handle === 'vertex2') newH = Math.max(startH + dy * 2, MIN_SHAPE_SIZE); // Drag bottom affects height
-                         else if (handle === 'vertex1') newW = Math.max(startW + dx * 2, MIN_SHAPE_SIZE); // Drag right affects width
-                         else if (handle === 'vertex3') newW = Math.max(startW - dx * 2, MIN_SHAPE_SIZE); // Drag left affects width
-                         shape.width = newW; shape.height = newH;
-                         // Center x,y remains fixed
-                         break;
-
-                    case 'parallelogram': // x,y is top-left
-                         newW = shape.width; newH = shape.height; newX = shape.x; newY = shape.y; let newSkew = shape.skewOffset;
-                         // vertex0=TL, 1=TR, 2=BR, 3=BL
-                         if (handle === 'vertex0') { // Drag TL
-                             newW = Math.max(startW - dx, MIN_SHAPE_SIZE); newH = Math.max(startH - dy, MIN_SHAPE_SIZE);
-                             newX = startX + dx; newY = startY + dy;
-                             newSkew = startSkew - dx; // Adjust skew based on TL x change
-                         } else if (handle === 'vertex1') { // Drag TR
-                             newW = Math.max(startW + dx, MIN_SHAPE_SIZE); newH = Math.max(startH - dy, MIN_SHAPE_SIZE);
-                             newY = startY + dy;
-                             // newSkew remains same relative to TL
-                         } else if (handle === 'vertex2') { // Drag BR
-                             newW = Math.max(startW + dx - (startSkew - newSkew), MIN_SHAPE_SIZE); // Complex interaction
-                             newH = Math.max(startH + dy, MIN_SHAPE_SIZE);
-                             newSkew = startSkew + dx; // Adjust skew based on BR x change relative to TR?
-                         } else if (handle === 'vertex3') { // Drag BL
-                             newW = Math.max(startW - dx + (startSkew - newSkew), MIN_SHAPE_SIZE);
-                             newH = Math.max(startH + dy, MIN_SHAPE_SIZE);
-                             newX = startX + dx; // Adjust TL x
-                             newSkew = startSkew - dx;
-                         }
-                         shape.width = newW; shape.height = newH; shape.x = newX; shape.y = newY; shape.skewOffset = newSkew;
-                         break;
-
-                    case 'trapezoid': // x,y is center of top base
-                         newTopW = shape.topWidth; newBottomW = shape.bottomWidth; newH = shape.height; newX = shape.x; newY = shape.y;
-                         // vertex0=TL, 1=TR, 2=BR, 3=BL
-                         if (handle === 'vertex0') { // Drag TL
-                             newTopW = Math.max(startTopW - dx * 2, MIN_SHAPE_SIZE / 2);
-                             newH = Math.max(startH - dy, MIN_SHAPE_SIZE);
-                             newX = startX + dx; // Adjust center x
-                             newY = startY + dy;
-                         } else if (handle === 'vertex1') { // Drag TR
-                             newTopW = Math.max(startTopW + dx * 2, MIN_SHAPE_SIZE / 2);
-                             newH = Math.max(startH - dy, MIN_SHAPE_SIZE);
-                             newX = startX + dx; // Adjust center x
-                             newY = startY + dy;
-                         } else if (handle === 'vertex2') { // Drag BR
-                             newBottomW = Math.max(startBottomW + dx * 2, MIN_SHAPE_SIZE / 2);
-                             newH = Math.max(startH + dy, MIN_SHAPE_SIZE);
-                             newX = startX + dx * (startTopW / startBottomW); // Adjust center x proportionally? Simpler: keep fixed
-                         } else if (handle === 'vertex3') { // Drag BL
-                             newBottomW = Math.max(startBottomW - dx * 2, MIN_SHAPE_SIZE / 2);
-                             newH = Math.max(startH + dy, MIN_SHAPE_SIZE);
-                             newX = startX + dx * (startTopW / startBottomW); // Adjust center x proportionally? Simpler: keep fixed
-                         }
-                         shape.topWidth = newTopW; shape.bottomWidth = newBottomW; shape.height = newH; shape.x = newX; shape.y = newY;
-                         break;
-                }
-            }
-
-
-            // --- Measurement Logic ---
-            measurementRadios.forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    selectedMeasurementType = e.target.value;
-                    shapeToMeasure = null; calculateButton.disabled = true;
-                    if (selectedShape) prepareCalculation(selectedShape);
-                    else showCalcMessage(`<span class="text-gray-500 italic">اختر ${selectedMeasurementType === 'area' ? 'المساحة' : 'المحيط'} ثم اضغط على الشكل...</span>`);
-                });
-            });
-
-            function clearMeasurement() {
-                 shapeToMeasure = null; calculateButton.disabled = true;
-                 if (!selectedMeasurementType) showCalcMessage('<span class="text-gray-500 italic">اختر نوع القياس ثم اضغط على الشكل...</span>');
-                 else showCalcMessage(`<span class="text-gray-500 italic">اختر ${selectedMeasurementType === 'area' ? 'المساحة' : 'المحيط'} ثم اضغط على الشكل...</span>`);
-            }
-
-            function prepareCalculation(shape, enableButton = true) {
-                if (!selectedMeasurementType || !shape) { clearMeasurement(); return; }
-                shapeToMeasure = shape;
-                let formula = `${formulaTexts[selectedMeasurementType]}`; let substituted = `${formulaTexts[selectedMeasurementType]}`;
-                const shapeFormulas = formulaTexts[shape.type];
-                if (!shapeFormulas || !shapeFormulas[selectedMeasurementType]) { showCalcMessage("<span>الحساب غير مدعوم.</span>"); calculateButton.disabled = true; return; }
-                formula += shapeFormulas[selectedMeasurementType]; substituted += shapeFormulas[selectedMeasurementType];
-
-                let sideCm, widthCm, heightCm, radiusCm, baseCm, sideACm, sideBCm, topBaseCm, bottomBaseCm, diag1Cm, diag2Cm, slantHeightCm, pi = 3.14;
-                const vertices = getVertices(shape); // Get vertices for calculations
-
-                try {
-                    switch (shape.type) {
-                        case 'square': sideCm = shape.side * CM_PER_PIXEL; substituted = substituted.replace(/الضلع/g, toArabicNumber(sideCm)); break;
-                        case 'rectangle': widthCm = shape.width * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; substituted = substituted.replace("الطول", toArabicNumber(widthCm)).replace("العرض", toArabicNumber(heightCm)); break;
-                        case 'circle': radiusCm = shape.r * CM_PER_PIXEL; substituted = substituted.replace(/نصف القطر/g, toArabicNumber(radiusCm)).replace("π", '٣٫١٤'); break;
-                        case 'triangle': baseCm = shape.width * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; sideACm = Math.hypot(shape.width / 2, shape.height) * CM_PER_PIXEL;
-                             if (selectedMeasurementType === 'area') substituted = substituted.replace("القاعدة", toArabicNumber(baseCm)).replace("الارتفاع", toArabicNumber(heightCm)).replace("٠٫٥", '٠٫٥');
-                             else substituted = `المحيط = ${toArabicNumber(baseCm)} + ${toArabicNumber(sideACm)} + ${toArabicNumber(sideACm)}`; break;
-                        case 'rhombus': diag1Cm = shape.width * CM_PER_PIXEL; diag2Cm = shape.height * CM_PER_PIXEL; sideCm = distance(vertices[0], vertices[1]) * CM_PER_PIXEL;
-                             if (selectedMeasurementType === 'area') substituted = substituted.replace("القطر الأول", toArabicNumber(diag1Cm)).replace("القطر الثاني", toArabicNumber(diag2Cm)).replace("٠٫٥", '٠٫٥');
-                             else substituted = substituted.replace("الضلع", toArabicNumber(sideCm)); break;
-                        case 'parallelogram': baseCm = shape.width * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; sideBCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; // Slanted side
-                             if (selectedMeasurementType === 'area') substituted = substituted.replace("القاعدة", toArabicNumber(baseCm)).replace("الارتفاع", toArabicNumber(heightCm));
-                             else substituted = substituted.replace("الضلع الأول", toArabicNumber(baseCm)).replace("الضلع الثاني", toArabicNumber(sideBCm)); break;
-                        case 'trapezoid': topBaseCm = shape.topWidth * CM_PER_PIXEL; bottomBaseCm = shape.bottomWidth * CM_PER_PIXEL; heightCm = shape.height * CM_PER_PIXEL; sideACm = distance(vertices[0], vertices[3]) * CM_PER_PIXEL; sideBCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; // Slanted sides
-                            if (selectedMeasurementType === 'area') substituted = substituted.replace("القاعدة الأولى", toArabicNumber(topBaseCm)).replace("القاعدة الثانية", toArabicNumber(bottomBaseCm)).replace("الارتفاع", toArabicNumber(heightCm)).replace("٠٫٥", '٠٫٥');
-                            else substituted = `المحيط = ${toArabicNumber(topBaseCm)} + ${toArabicNumber(bottomBaseCm)} + ${toArabicNumber(sideACm)} + ${toArabicNumber(sideBCm)}`; break; // Sum of all 4 sides
-                        default: throw new Error("Unsupported shape.");
-                    }
-                    showCalcMessage(`<span>${formula}</span><span>${substituted}</span><span id="result-line" class="font-bold text-blue-700 hidden"></span>`);
-                    calculateButton.disabled = !enableButton;
-                } catch (error) { console.error("Prep calc error:", error); showCalcMessage("<span>خطأ.</span>"); calculateButton.disabled = true; }
-            }
-
-            calculateButton.addEventListener('click', () => {
-                if (!shapeToMeasure || !selectedMeasurementType) return;
-                let result = null; const unit = unitTexts[selectedMeasurementType] || '';
-                let sideCm, widthCm, heightCm, radiusCm, baseCm, sideACm, sideBCm, topBaseCm, bottomBaseCm, diag1Cm, diag2Cm, pi = 3.14;
-                const vertices = getVertices(shapeToMeasure);
-
-                 try {
-                    switch (shapeToMeasure.type) {
-                         case 'square': sideCm = shapeToMeasure.side * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (sideCm * sideCm) : (4 * sideCm); break;
-                         case 'rectangle': widthCm = shapeToMeasure.width * CM_PER_PIXEL; heightCm = shapeToMeasure.height * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (widthCm * heightCm) : (2 * (widthCm + heightCm)); break;
-                         case 'circle': radiusCm = shapeToMeasure.r * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (pi * radiusCm * radiusCm) : (2 * pi * radiusCm); break;
-                         case 'triangle': baseCm = shapeToMeasure.width * CM_PER_PIXEL; heightCm = shapeToMeasure.height * CM_PER_PIXEL; sideACm = Math.hypot(shapeToMeasure.width / 2, shapeToMeasure.height) * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (0.5 * baseCm * heightCm) : (baseCm + 2 * sideACm); break;
-                         case 'rhombus': diag1Cm = shapeToMeasure.width * CM_PER_PIXEL; diag2Cm = shapeToMeasure.height * CM_PER_PIXEL; sideCm = distance(vertices[0], vertices[1]) * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (0.5 * diag1Cm * diag2Cm) : (4 * sideCm); break;
-                         case 'parallelogram': baseCm = shapeToMeasure.width * CM_PER_PIXEL; heightCm = shapeToMeasure.height * CM_PER_PIXEL; sideBCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (baseCm * heightCm) : (2 * (baseCm + sideBCm)); break;
-                         case 'trapezoid': topBaseCm = shapeToMeasure.topWidth * CM_PER_PIXEL; bottomBaseCm = shapeToMeasure.bottomWidth * CM_PER_PIXEL; heightCm = shapeToMeasure.height * CM_PER_PIXEL; sideACm = distance(vertices[0], vertices[3]) * CM_PER_PIXEL; sideBCm = distance(vertices[1], vertices[2]) * CM_PER_PIXEL; result = (selectedMeasurementType === 'area') ? (0.5 * (topBaseCm + bottomBaseCm) * heightCm) : (topBaseCm + bottomBaseCm + sideACm + sideBCm); break;
-                         default: throw new Error("Unsupported shape.");
-                    }
-                    const resultLine = calculationDisplay.querySelector('#result-line');
-                    if (resultLine) { resultLine.textContent = `= ${toArabicNumber(result)}${unit}`; resultLine.classList.remove('hidden'); }
-                    calculateButton.disabled = true;
-                } catch (error) { console.error("Final calc error:", error); showCalcMessage("<span>خطأ.</span>"); calculateButton.disabled = true; }
-            });
-
-            // --- Pattern Box Logic ---
-            function initializePatternBox() {
-                patternBox.innerHTML = ''; // Clear existing slots
-                patternSlotsData = Array(PATTERN_SLOTS).fill(null); // Reset data
-                for (let i = 0; i < PATTERN_SLOTS; i++) {
-                    const slot = document.createElement('div');
-                    slot.className = 'pattern-slot';
-                    slot.dataset.index = i;
-                    // Drag and drop listeners for slots
-                    slot.addEventListener('dragover', handlePatternDragOver);
-                    slot.addEventListener('dragleave', handlePatternDragLeave);
-                    slot.addEventListener('drop', handlePatternDrop);
-                    // Click to clear slot
-                    slot.addEventListener('click', handleSlotClick);
-                    patternBox.appendChild(slot);
-                }
-                checkPatternButton.disabled = true; // Disable initially
-                showPatternMessage(patternMessages.prompt);
-            }
-
-            function handlePatternDragOver(e) {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'copy';
-                e.currentTarget.classList.add('over'); // Highlight slot
-            }
-
-            function handlePatternDragLeave(e) {
-                e.currentTarget.classList.remove('over');
-            }
-
-            function handlePatternDrop(e) {
-                e.preventDefault();
-                e.currentTarget.classList.remove('over');
-                const shapeType = e.dataTransfer.getData('text/plain'); // Get type from palette drag
-                const slotIndex = parseInt(e.currentTarget.dataset.index);
-
-                if (shapeType && slotIndex >= 0 && slotIndex < PATTERN_SLOTS) {
-                    patternSlotsData[slotIndex] = shapeType; // Store shape type
-                    // Display shape SVG in the slot
-                    const paletteShapeDiv = document.querySelector(`.shape-template[data-shape="${shapeType}"]`);
-                    if (paletteShapeDiv) {
-                        e.currentTarget.innerHTML = paletteShapeDiv.innerHTML; // Copy SVG
-                        // Add a clear button (optional)
-                         const clearBtn = document.createElement('span');
-                         clearBtn.className = 'clear-slot-btn';
-                         clearBtn.innerHTML = '&times;'; // 'x' symbol
-                         clearBtn.onclick = (ev) => { // Use onclick for simplicity here
-                             ev.stopPropagation(); // Prevent triggering slot click
-                             clearPatternSlot(slotIndex);
-                         };
-                         e.currentTarget.appendChild(clearBtn);
+            },
+            rectangle: {
+                dims: ['length', 'width'], getArea: (d) => d.length * d.width, getPerimeter: (d) => 2 * (d.length + d.width),
+                areaFormula: (l) => `A = ${translations[l].length} ${multiplySymbol} ${translations[l].width}`,
+                perimeterFormula: (l) => `P = 2 ${multiplySymbol} (${translations[l].length} + ${translations[l].width})`,
+                findDim: (m, mv, kd, kdv, l) => {
+                    if (!kd || isNaN(kdv) || kdv <= 0) return { error: translations[l].valueMissing };
+                    if (m === 'area') {
+                        if (kd === 'length') { const w = mv / kdv; return (!isNaN(w) && w > 0) ? { dim: translations[l].width, value: formatNumber(w), steps: [`${translations[l].width} = ${mv} / ${kdv} = ${formatNumber(w)}`] } : { error: translations[l].invalidInput }; }
+                        else { const len = mv / kdv; return (!isNaN(len) && len > 0) ? { dim: translations[l].length, value: formatNumber(len), steps: [`${translations[l].length} = ${mv} / ${kdv} = ${formatNumber(len)}`] } : { error: translations[l].invalidInput }; }
                     } else {
-                        e.currentTarget.innerHTML = '?'; // Fallback if SVG not found
+                        const hp = mv / 2;
+                        if (kd === 'length') { const w = hp - kdv; return (!isNaN(w) && w > 0) ? { dim: translations[l].width, value: formatNumber(w), steps: [`${translations[l].width} = (${mv} / 2) - ${kdv} = ${formatNumber(w)}`] } : { error: translations[l].invalidInput }; }
+                        else { const len = hp - kdv; return (!isNaN(len) && len > 0) ? { dim: translations[l].length, value: formatNumber(len), steps: [`${translations[l].length} = (${mv} / 2) - ${kdv} = ${formatNumber(len)}`] } : { error: translations[l].invalidInput }; }
                     }
-                    updatePatternCheckButton(); // Enable/disable check button
-                    showPatternMessage(''); // Clear prompt/feedback
                 }
-            }
+            },
+             triangle: {
+                dims: ['base', 'height', 'sideA', 'sideB', 'sideC'], getArea: (d) => 0.5 * d.base * d.height, getPerimeter: (d) => d.sideA + d.sideB + d.sideC,
+                areaFormula: (l) => `A = 0.5 ${multiplySymbol} ${translations[l].base} ${multiplySymbol} ${translations[l].height}`,
+                perimeterFormula: (l) => `P = ${translations[l].sideA} + ${translations[l].sideB} + ${translations[l].sideC}`,
+                findDim: (m, mv, kd, kdv, l) => {
+                    if (m === 'area') {
+                        if (!kd || isNaN(kdv) || kdv <= 0) return { error: translations[l].valueMissing };
+                        if (kd === 'base') { const h = (2 * mv) / kdv; return (!isNaN(h) && h > 0) ? { dim: translations[l].height, value: formatNumber(h), steps: [`${translations[l].height} = (2 ${multiplySymbol} ${mv}) / ${kdv} = ${formatNumber(h)}`] } : { error: translations[l].invalidInput }; }
+                        else if (kd === 'height') { const b = (2 * mv) / kdv; return (!isNaN(b) && b > 0) ? { dim: translations[l].base, value: formatNumber(b), steps: [`${translations[l].base} = (2 ${multiplySymbol} ${mv}) / ${kdv} = ${formatNumber(b)}`] } : { error: translations[l].invalidInput }; }
+                        else { return { error: translations[l].cannotSolve }; }
+                    } else { return { error: translations[l].cannotSolve }; }
+                }
+            },
+            circle: {
+                dims: ['radius'], getArea: (d) => Math.PI * d.radius * d.radius, getPerimeter: (d) => 2 * Math.PI * d.radius,
+                areaFormula: (l) => `A = π ${multiplySymbol} ${translations[l].radius}²`, perimeterFormula: (l) => `P = 2 ${multiplySymbol} π ${multiplySymbol} ${translations[l].radius}`,
+                findDim: (m, mv, kd, kdv, l) => {
+                    if (m === 'area') { const r = Math.sqrt(mv / Math.PI); return (!isNaN(r) && r > 0) ? { dim: translations[l].radius, value: formatNumber(r), steps: [`${translations[l].radius} = √(${mv} / π) ≈ ${formatNumber(r)}`] } : { error: translations[l].invalidInput }; }
+                    else { const r = mv / (2 * Math.PI); return (!isNaN(r) && r > 0) ? { dim: translations[l].radius, value: formatNumber(r), steps: [`${translations[l].radius} = ${mv} / (2 ${multiplySymbol} π) ≈ ${formatNumber(r)}`] } : { error: translations[l].invalidInput }; }
+                }
+            },
+             rhombus: {
+                dims: ['side', 'diagonal1', 'diagonal2'], getArea: (d) => 0.5 * d.diagonal1 * d.diagonal2, getPerimeter: (d) => 4 * d.side,
+                areaFormula: (l) => `A = 0.5 ${multiplySymbol} ${translations[l].diagonal1} ${multiplySymbol} ${translations[l].diagonal2}`,
+                perimeterFormula: (l) => `P = 4 ${multiplySymbol} ${translations[l].side}`,
+                findDim: (m, mv, kd, kdv, l) => {
+                    if (m === 'area') {
+                        if (!kd || isNaN(kdv) || kdv <= 0) return { error: translations[l].valueMissing };
+                        if (kd === 'diagonal1') { const d2 = (2 * mv) / kdv; return (!isNaN(d2) && d2 > 0) ? { dim: translations[l].diagonal2, value: formatNumber(d2), steps: [`${translations[l].diagonal2} = (2 ${multiplySymbol} ${mv}) / ${kdv} = ${formatNumber(d2)}`] } : { error: translations[l].invalidInput }; }
+                        else if (kd === 'diagonal2') { const d1 = (2 * mv) / kdv; return (!isNaN(d1) && d1 > 0) ? { dim: translations[l].diagonal1, value: formatNumber(d1), steps: [`${translations[l].diagonal1} = (2 ${multiplySymbol} ${mv}) / ${kdv} = ${formatNumber(d1)}`] } : { error: translations[l].invalidInput }; }
+                        else { return { error: translations[l].cannotSolve }; }
+                    } else { const s = mv / 4; return (!isNaN(s) && s > 0) ? { dim: translations[l].side, value: formatNumber(s), steps: [`${translations[l].side} = ${mv} / 4 = ${formatNumber(s)}`] } : { error: translations[l].invalidInput }; }
+                }
+            },
+            parallelogram: {
+                dims: ['base', 'height', 'sideA', 'sideB'], getArea: (d) => d.base * d.height, getPerimeter: (d) => 2 * (d.sideA + d.sideB),
+                areaFormula: (l) => `A = ${translations[l].base} ${multiplySymbol} ${translations[l].height}`,
+                perimeterFormula: (l) => `P = 2 ${multiplySymbol} (${translations[l].sideA} + ${translations[l].sideB})`,
+                findDim: (m, mv, kd, kdv, l) => {
+                    if (!kd || isNaN(kdv) || kdv <= 0) return { error: translations[l].valueMissing };
+                    if (m === 'area') {
+                        if (kd === 'base') { const h = mv / kdv; return (!isNaN(h) && h > 0) ? { dim: translations[l].height, value: formatNumber(h), steps: [`${translations[l].height} = ${mv} / ${kdv} = ${formatNumber(h)}`] } : { error: translations[l].invalidInput }; }
+                        else if (kd === 'height') { const b = mv / kdv; return (!isNaN(b) && b > 0) ? { dim: translations[l].base, value: formatNumber(b), steps: [`${translations[l].base} = ${mv} / ${kdv} = ${formatNumber(b)}`] } : { error: translations[l].invalidInput }; }
+                        else { return { error: translations[l].cannotSolve }; }
+                    } else {
+                        const hp = mv / 2;
+                        if (kd === 'sideA') { const b = hp - kdv; return (!isNaN(b) && b > 0) ? { dim: translations[l].sideB, value: formatNumber(b), steps: [`${translations[l].sideB} = (${mv} / 2) - ${kdv} = ${formatNumber(b)}`] } : { error: translations[l].invalidInput }; }
+                        else if (kd === 'sideB') { const a = hp - kdv; return (!isNaN(a) && a > 0) ? { dim: translations[l].sideA, value: formatNumber(a), steps: [`${translations[l].sideA} = (${mv} / 2) - ${kdv} = ${formatNumber(a)}`] } : { error: translations[l].invalidInput }; }
+                        else { return { error: translations[l].cannotSolve }; }
+                    }
+                }
+            },
+            trapezoid: {
+                dims: ['baseA', 'baseB', 'height', 'sideC', 'sideD'], getArea: (d) => 0.5 * (d.baseA + d.baseB) * d.height, getPerimeter: (d) => d.baseA + d.baseB + d.sideC + d.sideD,
+                areaFormula: (l) => `A = 0.5 ${multiplySymbol} (${translations[l].base}A + ${translations[l].base}B) ${multiplySymbol} ${translations[l].height}`,
+                perimeterFormula: (l) => `P = ${translations[l].base}A + ${translations[l].base}B + ${translations[l].sideC} + ${translations[l].sideD}`,
+                findDim: (m, mv, kd, kdv, l) => { return { error: translations[l].cannotSolve }; }
+            },
+        };
 
-            function handleSlotClick(e) {
-                 // Optional: Clear slot on click if needed, or do nothing
-                 // const slotIndex = parseInt(e.currentTarget.dataset.index);
-                 // clearPatternSlot(slotIndex);
-            }
+        // --- Utility Functions ---
+        function formatNumber(num) {
+            if (isNaN(num)) return num;
+            if (Math.abs(num - Math.round(num)) < 0.001) { return Math.round(num).toString(); }
+            else { return parseFloat(num.toFixed(2)).toString(); }
+        }
 
-            function clearPatternSlot(index) {
-                 if (index >= 0 && index < PATTERN_SLOTS) {
-                     patternSlotsData[index] = null;
-                     const slotElement = patternBox.children[index];
-                     if (slotElement) {
-                         slotElement.innerHTML = ''; // Clear content
-                     }
-                     updatePatternCheckButton();
-                     showPatternMessage(''); // Clear feedback
-                 }
-            }
+        function getTranslate(key, lang = currentLang) {
+            return translations[lang][key] || key;
+        }
 
+        function applyTranslations(lang) {
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.dataset.translate;
+                if (translations[lang] && translations[lang][key]) {
+                    if (el.tagName === 'INPUT' && el.placeholder) { el.placeholder = translations[lang][key]; }
+                    else if (el.tagName === 'OPTION') { el.textContent = translations[lang][key]; } // Update option text
+                    else { el.textContent = translations[lang][key]; }
+                }
+            });
+             document.querySelectorAll('.toolbar-shape').forEach(el => {
+                 const shapeType = el.dataset.shapeType;
+                 const enName = translations.en[shapeType] || shapeType;
+                 const arName = translations.ar[shapeType] || shapeType;
+                 el.title = `${enName} / ${arName}`;
+             });
+            langToggleButton.textContent = getTranslate(lang === 'en' ? 'switchToAr' : 'switchToEn', lang);
+            if (selectedShapeElement) { updateCalculatorUI(selectedShapeElement.dataset.shapeType); }
+            else { resetCalculatorUI(); }
+             updatePatternCheckButton();
+             populateAllToolbarPalettes();
+        }
 
-            function updatePatternCheckButton() {
-                // Enable check button only if at least two slots are filled
-                const filledSlots = patternSlotsData.filter(type => type !== null).length;
-                checkPatternButton.disabled = filledSlots < 2;
-            }
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ar' : 'en';
+            htmlElement.lang = currentLang;
+            htmlElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+            applyTranslations(currentLang);
+        }
 
-            checkPatternButton.addEventListener('click', () => {
-                const patternSequence = patternSlotsData.filter(type => type !== null); // Get only filled slots
-                if (patternSequence.length < 2) return; // Need at least 2 shapes
+        function showFeedback(messageKey, type = 'success', duration = 3000) {
+            const messageText = getTranslate(messageKey);
+            feedbackMessage.textContent = messageText;
+            feedbackMessage.className = type;
+            feedbackMessage.style.display = 'block'; feedbackMessage.style.opacity = 1;
+            setTimeout(() => {
+                feedbackMessage.style.opacity = 0;
+                 setTimeout(() => { feedbackMessage.style.display = 'none'; }, 300);
+            }, duration);
+        }
 
-                let isPattern = false;
-                // Check for simple repeating patterns (find shortest repeating unit)
-                for (let unitLength = 1; unitLength <= Math.floor(patternSequence.length / 2); unitLength++) {
-                    const unit = patternSequence.slice(0, unitLength);
-                    let repeats = true;
-                    // Check if the rest of the sequence consists of repetitions of the unit
-                    for (let i = unitLength; i < patternSequence.length; i++) {
-                        if (patternSequence[i] !== unit[i % unitLength]) {
-                            repeats = false;
-                            break;
+        // --- Drag and Drop (Shapes) ---
+        let dragStartPosition = { x: 0, y: 0 };
+
+        interact('.draggable') // Applies to both toolbar and workspace shapes for pattern bar drop
+            .draggable({
+                inertia: true,
+                listeners: {
+                    start(event) {
+                        const target = event.target;
+                        target.classList.add('dragging'); // Add dragging class
+                        target.style.zIndex = '1000';
+                        // Store color differently based on source
+                        let startColor = '#cccccc';
+                        if (target.classList.contains('toolbar-shape')) {
+                            const svg = target.querySelector('svg');
+                            startColor = svg ? svg.getAttribute('fill') : '#cccccc';
+                            hideAllToolbarPalettes(); // Hide palette only when dragging from toolbar
+                        } else if (target.classList.contains('workspace-shape')) {
+                            const svg = target.querySelector('svg');
+                            startColor = svg ? svg.getAttribute('fill') : '#cccccc';
+                        }
+                        event.interaction.data = { startColor: startColor };
+                        target.style.opacity = '0.7';
+                    },
+                    move(event) {
+                        const target = event.target;
+                        const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                        const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+                        // For workspace shapes, use transform. For toolbar, use data attributes.
+                        if (target.classList.contains('workspace-shape')) {
+                             target.style.transform = `translate(${x - parseFloat(target.style.left || 0)}px, ${y - parseFloat(target.style.top || 0)}px)`;
+                        } else {
+                             target.style.transform = `translate(${x}px, ${y}px)`;
+                        }
+                        target.setAttribute('data-x', x); target.setAttribute('data-y', y);
+                    },
+                    end(event) {
+                        const target = event.target;
+                        target.classList.remove('dragging');
+                        target.style.opacity = '1';
+                        target.style.zIndex = target.classList.contains('workspace-shape') ? '5' : '1'; // Reset z-index
+
+                        // Reset position only if NOT dropped on a pattern slot
+                        if (!event.relatedTarget || !event.relatedTarget.classList.contains('pattern-slot')) {
+                            if (target.classList.contains('toolbar-shape')) {
+                                target.style.transform = 'translate(0px, 0px)';
+                                target.setAttribute('data-x', 0); target.setAttribute('data-y', 0);
+                            } else if (target.classList.contains('workspace-shape')) {
+                                // Snap back workspace shapes to their original position
+                                const finalX = parseFloat(target.style.left || 0);
+                                const finalY = parseFloat(target.style.top || 0);
+                                target.style.transform = 'translate(0, 0)';
+                                target.setAttribute('data-x', finalX);
+                                target.setAttribute('data-y', finalY);
+                            }
+                        } else {
+                             // If dropped on pattern slot, workspace shape still snaps back
+                             if (target.classList.contains('workspace-shape')) {
+                                const finalX = parseFloat(target.style.left || 0);
+                                const finalY = parseFloat(target.style.top || 0);
+                                target.style.transform = 'translate(0, 0)';
+                                target.setAttribute('data-x', finalX);
+                                target.setAttribute('data-y', finalY);
+                            }
                         }
                     }
-                    if (repeats) {
-                        isPattern = true;
-                        break; // Found the shortest repeating unit
-                    }
-                }
-
-                // Display feedback
-                if (isPattern) {
-                    showPatternMessage(patternMessages.correct);
-                } else {
-                    showPatternMessage(patternMessages.incorrect);
-                }
+                },
+                modifiers: [ interact.modifiers.restrictRect({ restriction: 'body', endOnly: true }) ]
             });
 
+        interact('#workspace-area').dropzone({
+            accept: '.toolbar-shape', // Only accept shapes from the toolbar
+            overlap: 0.5,
+            ondropactivate: (e) => e.target.classList.add('drop-active'),
+            ondragenter: (e) => { e.target.classList.add('drop-target'); e.relatedTarget.style.borderColor = '#34d399'; },
+            ondragleave: (e) => { e.target.classList.remove('drop-target'); e.relatedTarget.style.borderColor = ''; },
+            ondrop: (event) => {
+                const draggableElement = event.relatedTarget;
+                createWorkspaceShape(
+                    draggableElement.dataset.shapeType, event.dragEvent.client.x, event.dragEvent.client.y,
+                    event.target, event.interaction.data.startColor
+                );
+                // Toolbar shape position is reset in its drag end listener
+            },
+            ondropdeactivate: (e) => { e.target.classList.remove('drop-active'); e.target.classList.remove('drop-target'); }
+        });
 
-            // --- Initial Setup ---
-            initializePatternBox(); // Create the pattern slots
-            drawCanvas();
+        interact('.pattern-slot').dropzone({
+             // *** MODIFIED: Accept both toolbar and workspace shapes ***
+             accept: '.toolbar-shape, .workspace-shape',
+             overlap: 0.5,
+             ondropactivate: (e) => e.target.classList.add('drop-active'),
+             ondragenter: (e) => e.target.classList.add('drop-target'),
+             ondragleave: (e) => e.target.classList.remove('drop-target'),
+             ondrop: (event) => {
+                 const draggableElement = event.relatedTarget;
+                 let shapeType = draggableElement.dataset.shapeType;
+                 let color = '#cccccc'; // Default color
 
-        }); // End DOMContentLoaded
+                 // Get color based on source
+                 if (draggableElement.classList.contains('toolbar-shape') || draggableElement.classList.contains('workspace-shape')) {
+                     const svg = draggableElement.querySelector('svg');
+                     color = svg ? svg.getAttribute('fill') : '#cccccc';
+                 }
+
+                 addShapeToPatternSlot( event.target, shapeType, color );
+
+                 // Reset toolbar shape position if dragged from there
+                 if (draggableElement.classList.contains('toolbar-shape')) {
+                     draggableElement.style.transform = 'translate(0px, 0px)';
+                     draggableElement.setAttribute('data-x', 0); draggableElement.setAttribute('data-y', 0);
+                 }
+                 // Workspace shapes snap back automatically in their drag end listener
+             },
+             ondropdeactivate: (e) => { e.target.classList.remove('drop-active'); e.target.classList.remove('drop-target'); }
+        });
+
+        // --- Workspace Shape Management ---
+        function createWorkspaceShape(shapeType, dropX, dropY, container, initialColor = '#cccccc') {
+            const containerRect = container.getBoundingClientRect();
+            const shapeElement = document.createElement('div');
+            shapeElement.id = `shape-${shapeCounter++}`;
+            // *** MODIFIED: Add 'draggable' class to workspace shapes ***
+            shapeElement.classList.add('workspace-shape', 'draggable');
+            shapeElement.dataset.shapeType = shapeType;
+
+            let initialWidth = 100; let initialHeight = 100;
+            if (shapeType === 'rectangle') initialWidth = 120;
+            if (shapeType === 'triangle') initialHeight = 90;
+            if (shapeType === 'circle') initialWidth = initialHeight = 100;
+
+            shapeElement.style.width = `${initialWidth}px`; shapeElement.style.height = `${initialHeight}px`;
+
+            let x = dropX - containerRect.left - (initialWidth / 2);
+            let y = dropY - containerRect.top - (initialHeight / 2);
+            x = Math.max(0, Math.min(x, containerRect.width - initialWidth));
+            y = Math.max(0, Math.min(y, containerRect.height - initialHeight));
+
+            shapeElement.style.left = `${x}px`; shapeElement.style.top = `${y}px`;
+            shapeElement.style.transform = 'translate(0, 0)';
+            shapeElement.setAttribute('data-x', x); shapeElement.setAttribute('data-y', y);
+
+            const toolbarShape = shapeToolbar.querySelector(`.toolbar-shape[data-shape-type="${shapeType}"]`);
+            if (toolbarShape && toolbarShape.querySelector('svg')) {
+                 const svgClone = toolbarShape.querySelector('svg').cloneNode(true);
+                 svgClone.setAttribute('fill', initialColor); // Use color from toolbar drag
+                 shapeElement.appendChild(svgClone);
+            }
+
+             addResizeHandles(shapeElement);
+             container.appendChild(shapeElement);
+             makeShapeInteractive(shapeElement);
+             selectShape(shapeElement);
+        }
+
+        function addResizeHandles(shapeElement) {
+             const handles = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'bottom', 'left', 'right'];
+             handles.forEach(pos => {
+                 if (shapeElement.querySelector(`.resize-handle-${pos}`)) return;
+                 const handle = document.createElement('div');
+                 handle.classList.add('resize-handle', `resize-handle-${pos}`);
+                 shapeElement.appendChild(handle);
+             });
+        }
+
+        function updateShapeDimensions(shapeElement, newWidth, newHeight) {
+            const shapeType = shapeElement.dataset.shapeType;
+            let w = Math.max(20, newWidth); let h = Math.max(20, newHeight);
+            if (shapeType === 'square' || shapeType === 'circle') { w = h = Math.max(w, h); }
+            shapeElement.style.width = `${w}px`; shapeElement.style.height = `${h}px`;
+            shapeElement.dataset.rawWidth = w; shapeElement.dataset.rawHeight = h;
+        }
+
+
+        function makeShapeInteractive(element) {
+            // Draggable logic is now handled by the main '.draggable' interact setup
+            interact(element)
+                .resizable({ // Keep resizable specific to workspace shapes
+                    edges: { left: true, right: true, bottom: true, top: true },
+                    listeners: {
+                        start: (e) => selectShape(e.target),
+                        move: function (event) {
+                            let { x, y } = event.target.dataset; x = (parseFloat(x) || 0); y = (parseFloat(y) || 0);
+                            const newW = event.rect.width; const newH = event.rect.height;
+                            Object.assign(event.target.style, { width: `${newW}px`, height: `${newH}px` });
+                             x += event.deltaRect.left; y += event.deltaRect.top;
+                             event.target.style.transform = `translate(${x - parseFloat(event.target.style.left || 0)}px, ${y - parseFloat(event.target.style.top || 0)}px)`;
+                             event.target.setAttribute('data-x', x); event.target.setAttribute('data-y', y);
+                             updateShapeDimensions(event.target, newW, newH);
+                        },
+                        end(event) {
+                             const target = event.target; const finalX = parseFloat(target.getAttribute('data-x')) || 0; const finalY = parseFloat(target.getAttribute('data-y')) || 0;
+                             target.style.left = `${finalX}px`; target.style.top = `${finalY}px`; target.style.transform = 'translate(0, 0)';
+                             updateShapeDimensions(target, target.offsetWidth, target.offsetHeight);
+                        }
+                    },
+                    modifiers: [ interact.modifiers.restrictEdges({ outer: 'parent' }), interact.modifiers.restrictSize({ min: { width: 20, height: 20 } }) ],
+                    inertia: false
+                })
+                .on('tap', (e) => { selectShape(e.currentTarget); e.stopPropagation(); });
+        }
+
+        function selectShape(shapeElement) {
+            if (selectedShapeElement === shapeElement) return;
+            if (selectedShapeElement) {
+                selectedShapeElement.classList.remove('selected');
+                selectedShapeElement.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'none');
+            }
+            selectedShapeElement = shapeElement;
+            selectedShapeElement.classList.add('selected'); selectedShapeElement.style.zIndex = 20;
+            selectedShapeElement.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'block');
+            const shapeType = selectedShapeElement.dataset.shapeType;
+            updateCalculatorUI(shapeType);
+        }
+
+        function deselectShape() {
+            if (selectedShapeElement) {
+                selectedShapeElement.classList.remove('selected');
+                selectedShapeElement.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'none');
+                selectedShapeElement = null;
+                resetCalculatorUI();
+            }
+        }
+
+        workspace.addEventListener('click', (e) => { if (e.target === workspace) { deselectShape(); hideAllToolbarPalettes(); }});
+        document.addEventListener('keydown', (e) => { if (selectedShapeElement && (e.key === 'Delete' || e.key === 'Backspace')) { selectedShapeElement.remove(); deselectShape(); } });
+
+        // --- Calculator Logic ---
+
+        function resetCalculatorUI() {
+            noShapeMessage.classList.remove('hidden'); shapeInfoSection.classList.add('hidden');
+            calculationModeSection.classList.add('hidden'); inputsCalcSection.classList.add('hidden');
+            inputsFindSection.classList.add('hidden'); solveButtonSection.classList.add('hidden');
+            formulaDisplaySection.classList.add('hidden'); resultDisplaySection.classList.add('hidden');
+            selectedShapeNameEl.textContent = "None";
+            formulaDisplayDiv.innerHTML = ''; resultDisplayDiv.innerHTML = '';
+            knownDimensionsInputsDiv.innerHTML = ''; knownMetricValueInput.value = '';
+            knownDimensionNameSelect.innerHTML = ''; knownDimensionValueInput.value = '';
+        }
+
+        function updateCalculatorUI(shapeType) {
+            noShapeMessage.classList.add('hidden'); shapeInfoSection.classList.remove('hidden');
+            calculationModeSection.classList.remove('hidden'); solveButtonSection.classList.remove('hidden');
+
+            const shapeDef = shapeFormulas[shapeType];
+            if (!shapeDef) { resetCalculatorUI(); return; }
+
+            selectedShapeNameEl.textContent = getTranslate(shapeType);
+             updateCalculatorModeView(shapeType);
+        }
+
+         function updateCalculatorModeView(shapeType) {
+             const mode = calculationModeSelect.value;
+             inputsCalcSection.classList.add('hidden'); inputsFindSection.classList.add('hidden');
+             formulaDisplaySection.classList.add('hidden'); resultDisplaySection.classList.add('hidden');
+             formulaDisplayDiv.innerHTML = ''; resultDisplayDiv.innerHTML = '';
+
+             if (mode === 'calc_area' || mode === 'calc_perimeter') {
+                 inputsCalcSection.classList.remove('hidden');
+                 populateKnownDimensionsInputs(shapeType, mode);
+             } else {
+                 inputsFindSection.classList.remove('hidden');
+                 populateFindDimensionInputs(shapeType);
+             }
+         }
+
+         function populateKnownDimensionsInputs(shapeType, mode) {
+             knownDimensionsInputsDiv.innerHTML = ''; const shapeDef = shapeFormulas[shapeType]; if (!shapeDef) return;
+             let relevantDims = [];
+             if (mode === 'calc_area') {
+                 if (shapeType === 'square') relevantDims = ['side'];
+                 else if (shapeType === 'rectangle') relevantDims = ['length', 'width'];
+                 else if (shapeType === 'circle') relevantDims = ['radius'];
+                 else if (shapeType === 'triangle') relevantDims = ['base', 'height'];
+                 else if (shapeType === 'rhombus') relevantDims = ['diagonal1', 'diagonal2'];
+                 else if (shapeType === 'parallelogram') relevantDims = ['base', 'height'];
+                 else if (shapeType === 'trapezoid') relevantDims = ['baseA', 'baseB', 'height'];
+             } else if (mode === 'calc_perimeter') {
+                 if (shapeType === 'square' || shapeType === 'rhombus') relevantDims = ['side'];
+                 else if (shapeType === 'rectangle') relevantDims = ['length', 'width'];
+                 else if (shapeType === 'circle') relevantDims = ['radius'];
+                 else if (shapeType === 'triangle') relevantDims = ['sideA', 'sideB', 'sideC'];
+                 else if (shapeType === 'parallelogram') relevantDims = ['sideA', 'sideB'];
+                 else if (shapeType === 'trapezoid') relevantDims = ['baseA', 'baseB', 'sideC', 'sideD'];
+             }
+             relevantDims.forEach(dimKey => {
+                 const label = document.createElement('label'); label.htmlFor = `input-${dimKey}`; label.textContent = getTranslate(dimKey) + ':';
+                 const input = document.createElement('input'); input.type = 'number'; input.id = `input-${dimKey}`; input.name = dimKey;
+                 input.step = "any"; input.placeholder = `e.g., ${dimKey === 'radius' ? 5 : 10}.0`;
+                 knownDimensionsInputsDiv.appendChild(label); knownDimensionsInputsDiv.appendChild(input);
+             });
+         }
+
+         function populateFindDimensionInputs(shapeType) {
+             knownDimensionNameSelect.innerHTML = ''; const shapeDef = shapeFormulas[shapeType]; if (!shapeDef) return;
+             const metric = knownMetricSelect.value; let options = [];
+             if (metric === 'area') {
+                 if (shapeType === 'rectangle') options = ['length', 'width'];
+                 else if (shapeType === 'triangle') options = ['base', 'height'];
+                 else if (shapeType === 'rhombus') options = ['diagonal1', 'diagonal2'];
+                 else if (shapeType === 'parallelogram') options = ['base', 'height'];
+             } else {
+                 if (shapeType === 'rectangle') options = ['length', 'width'];
+                 else if (shapeType === 'parallelogram') options = ['sideA', 'sideB'];
+             }
+             options.forEach(dimKey => {
+                 const option = document.createElement('option'); option.value = dimKey; option.textContent = getTranslate(dimKey);
+                 knownDimensionNameSelect.appendChild(option);
+             });
+             const canFindWithoutKnownDim = (metric === 'area' && (shapeType === 'square' || shapeType === 'circle')) || (metric === 'perimeter' && (shapeType === 'square' || shapeType === 'circle' || shapeType === 'rhombus'));
+             knownDimensionNameSelect.disabled = options.length === 0 && !canFindWithoutKnownDim;
+             knownDimensionValueInput.disabled = options.length === 0 && !canFindWithoutKnownDim;
+             if (knownDimensionNameSelect.disabled) knownDimensionValueInput.value = '';
+         }
+
+
+         knownMetricSelect.addEventListener('change', () => { if (selectedShapeElement) populateFindDimensionInputs(selectedShapeElement.dataset.shapeType); });
+         calculationModeSelect.addEventListener('change', () => { if (selectedShapeElement) updateCalculatorModeView(selectedShapeElement.dataset.shapeType); });
+
+        function formatCalcSteps(formulaStr, inputDims) {
+             let steps = formulaStr;
+             for (const key in inputDims) { const regex = new RegExp(`\\b${key}\\b`, 'g'); steps = steps.replace(regex, inputDims[key]); }
+             steps = steps.replace(/π/g, '3.14159...'); steps = steps.replace(/\*/g, multiplySymbol);
+             return steps;
+        }
+
+        solveButton.addEventListener('click', () => {
+            if (!selectedShapeElement) { showFeedback('selectShapeFirst', 'error'); return; }
+            const shapeType = selectedShapeElement.dataset.shapeType; const shapeDef = shapeFormulas[shapeType]; const mode = calculationModeSelect.value;
+            formulaDisplaySection.classList.remove('hidden'); resultDisplaySection.classList.remove('hidden');
+            formulaDisplayDiv.innerHTML = ''; resultDisplayDiv.innerHTML = '';
+
+            if (mode === 'calc_area' || mode === 'calc_perimeter') {
+                const inputDims = {}; let hasMissingInput = false; let hasInvalidInput = false;
+                knownDimensionsInputsDiv.querySelectorAll('input').forEach(input => {
+                    const value = parseFloat(input.value); input.style.borderColor = '';
+                    if (!isNaN(value) && value > 0) { inputDims[input.name] = value; }
+                    else if (input.value.trim() === '') { hasMissingInput = true; input.style.borderColor = 'red'; }
+                    else { hasInvalidInput = true; input.style.borderColor = 'red'; }
+                });
+                if (hasMissingInput) { resultDisplayDiv.textContent = getTranslate('valueMissing'); return; }
+                if (hasInvalidInput) { resultDisplayDiv.textContent = getTranslate('invalidInput'); return; }
+
+                resultDisplayDiv.innerHTML = '';
+
+                if (mode === 'calc_area') {
+                    let area = NaN, areaFormulaStr = shapeDef.areaFormula(currentLang), areaCalcSteps = '';
+                    try { area = shapeDef.getArea(inputDims); if (isNaN(area)) throw new Error("NaN"); areaCalcSteps = formatCalcSteps(areaFormulaStr, inputDims) + ` = ${formatNumber(area)}`; }
+                    catch (e) { console.error("Area calc error:", e); area = NaN; }
+                    formulaDisplayDiv.innerHTML = `<p><strong>${getTranslate('areaFormula')}:</strong> ${areaFormulaStr}</p>`;
+                    resultDisplayDiv.innerHTML += `<p><strong>${getTranslate('area')}:</strong> ${isNaN(area) ? getTranslate('cannotSolve') : `${formatNumber(area)} ${getTranslate('cmSq')}`}<br><small>${isNaN(area) ? '' : `(${getTranslate('calculationSteps')} ${areaCalcSteps})`}</small></p>`;
+                } else {
+                    let perimeter = NaN, perimeterFormulaStr = shapeDef.perimeterFormula(currentLang), perimeterCalcSteps = '';
+                    try { perimeter = shapeDef.getPerimeter(inputDims); if (isNaN(perimeter)) throw new Error("NaN"); perimeterCalcSteps = formatCalcSteps(perimeterFormulaStr, inputDims) + ` = ${formatNumber(perimeter)}`; }
+                    catch (e) { console.error("Perimeter calc error:", e); perimeter = NaN; }
+                    formulaDisplayDiv.innerHTML = `<p><strong>${getTranslate('perimeterFormula')}:</strong> ${perimeterFormulaStr}</p>`;
+                    resultDisplayDiv.innerHTML += `<p><strong>${getTranslate('perimeter')}:</strong> ${isNaN(perimeter) ? getTranslate('cannotSolve') : `${formatNumber(perimeter)} ${getTranslate('cm')}`}<br><small>${isNaN(perimeter) ? '' : `(${getTranslate('calculationSteps')} ${perimeterCalcSteps})`}</small></p>`;
+                }
+            } else { // find_dimension
+                const metric = knownMetricSelect.value; const metricVal = parseFloat(knownMetricValueInput.value);
+                const knownDim = knownDimensionNameSelect.value; const knownDimVal = parseFloat(knownDimensionValueInput.value);
+                if (isNaN(metricVal) || metricVal <= 0) { resultDisplayDiv.textContent = getTranslate('valueMissing'); return; }
+                if (!knownDimensionNameSelect.disabled && (isNaN(knownDimVal) || knownDimVal <= 0)) { resultDisplayDiv.textContent = getTranslate('valueMissing'); return; }
+                const formulaStr = metric === 'area' ? shapeDef.areaFormula(currentLang) : shapeDef.perimeterFormula(currentLang);
+                formulaDisplayDiv.innerHTML = `<p><strong>${getTranslate(metric === 'area' ? 'areaFormula' : 'perimeterFormula')}:</strong> ${formulaStr}</p>`;
+                const result = shapeDef.findDim(metric, metricVal, knownDim, knownDimVal, currentLang);
+                if (result.error) { resultDisplayDiv.textContent = result.error; }
+                else {
+                     const resultText = getTranslate('missingDimensionResult').replace('{dim}', result.dim).replace('{value}', result.value).replace('{unit}', getTranslate('cm'));
+                     resultDisplayDiv.innerHTML = `<p>${resultText}</p>`;
+                     if (result.steps && result.steps.length > 0) {
+                          const formattedSteps = result.steps.map(step => step.replace(/\*/g, multiplySymbol));
+                          resultDisplayDiv.innerHTML += `<small>(${getTranslate('calculationSteps')} ${formattedSteps.join('; ')})</small>`;
+                     }
+                }
+            }
+        });
+
+
+        // --- Pattern Logic ---
+        function addShapeToPatternSlot(slotElement, shapeType, color = '#475569') {
+            clearSlot(slotElement, false);
+            const toolbarShape = shapeToolbar.querySelector(`.toolbar-shape[data-shape-type="${shapeType}"]`);
+            if (toolbarShape && toolbarShape.querySelector('svg')) {
+                const svgClone = toolbarShape.querySelector('svg').cloneNode(true);
+                svgClone.setAttribute('fill', color); // Use passed color
+                slotElement.appendChild(svgClone);
+            }
+            const removeBtn = document.createElement('span');
+            removeBtn.classList.add('remove-btn'); removeBtn.innerHTML = '&times;';
+            removeBtn.title = `Remove ${shapeType}`;
+            removeBtn.onclick = (e) => { e.stopPropagation(); clearSlot(slotElement); showFeedback('feedbackShapeRemoved', 'success', 1500); };
+            slotElement.appendChild(removeBtn);
+            slotElement.dataset.shapeType = shapeType;
+            updatePatternSequence();
+        }
+
+        function clearSlot(slotElement, updateSeq = true) {
+             slotElement.innerHTML = ''; delete slotElement.dataset.shapeType;
+             if (updateSeq) updatePatternSequence();
+        }
+
+        function updatePatternSequence() {
+            patternSequence = [];
+            patternSlots.forEach(slot => patternSequence.push(slot.dataset.shapeType || null));
+            updatePatternCheckButton();
+        }
+
+        function updatePatternCheckButton() {
+             const isEmpty = patternSequence.every(s => s === null);
+             checkPatternButton.disabled = isEmpty;
+             checkPatternButton.style.opacity = isEmpty ? 0.5 : 1;
+             checkPatternButton.style.cursor = isEmpty ? 'not-allowed' : 'pointer';
+        }
+
+        checkPatternButton.addEventListener('click', () => {
+            const currentPattern = patternSequence.filter(s => s !== null);
+            if (currentPattern.length < 2) { showFeedback('feedbackPatternIncorrect', 'error'); return; }
+            let isRepeating = false;
+            for (let len = 1; len <= Math.floor(currentPattern.length / 2); len++) {
+                if (currentPattern.length % len === 0) {
+                    const subPattern = currentPattern.slice(0, len); let repeats = true;
+                    for (let i = len; i < currentPattern.length; i += len) {
+                        if (JSON.stringify(currentPattern.slice(i, i + len)) !== JSON.stringify(subPattern)) { repeats = false; break; }
+                    }
+                    if (repeats) { isRepeating = true; break; }
+                }
+            }
+            showFeedback(isRepeating ? 'feedbackPatternCorrect' : 'feedbackPatternIncorrect', isRepeating ? 'success' : 'error');
+        });
+
+        clearPatternButton.addEventListener('click', () => {
+             patternSlots.forEach(slot => clearSlot(slot, false)); updatePatternSequence();
+        });
+
+        // --- Toolbar Color Selection Logic ---
+        function populateAllToolbarPalettes() {
+             document.querySelectorAll('.toolbar-shape-container').forEach(container => {
+                 const paletteDiv = container.querySelector('.toolbar-color-palette');
+                 if (!paletteDiv) return;
+                 paletteDiv.innerHTML = '';
+                 availableToolbarColors.forEach(color => {
+                     const swatch = document.createElement('div');
+                     swatch.classList.add('toolbar-color-swatch');
+                     swatch.style.backgroundColor = color; swatch.dataset.color = color;
+                     swatch.addEventListener('click', handleToolbarColorChange);
+                     paletteDiv.appendChild(swatch);
+                 });
+             });
+        }
+
+        function handleToolbarShapeClick(event) {
+             if (event.target.classList.contains('toolbar-color-swatch')) return;
+             const currentContainer = event.currentTarget; const wasActive = currentContainer.classList.contains('show-palette');
+             hideAllToolbarPalettes(); // Hide others first
+             if (!wasActive) { // Show if it wasn't active
+                 currentContainer.classList.add('show-palette');
+                 currentContainer.querySelector('.toolbar-shape').classList.add('palette-active');
+             }
+             event.stopPropagation();
+        }
+
+        function handleToolbarColorChange(event) {
+             const swatch = event.currentTarget; const newColor = swatch.dataset.color;
+             const container = swatch.closest('.toolbar-shape-container');
+             if (container) {
+                 const svg = container.querySelector('.toolbar-shape svg');
+                 if (svg) { svg.setAttribute('fill', newColor); }
+                 hideAllToolbarPalettes(); // Hide after selection
+             }
+             event.stopPropagation();
+        }
+
+        function hideAllToolbarPalettes() {
+            document.querySelectorAll('.toolbar-shape-container.show-palette').forEach(container => {
+                container.classList.remove('show-palette');
+                container.querySelector('.toolbar-shape').classList.remove('palette-active');
+            });
+        }
+
+        document.querySelectorAll('.toolbar-shape-container').forEach(container => {
+            container.addEventListener('click', handleToolbarShapeClick);
+        });
+        document.body.addEventListener('click', (event) => { if (!event.target.closest('#shape-toolbar')) { hideAllToolbarPalettes(); } });
+
+
+        // --- Initialization ---
+        langToggleButton.addEventListener('click', toggleLanguage);
+        currentLang = 'en';
+        htmlElement.lang = currentLang;
+        htmlElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+        populateAllToolbarPalettes();
+        applyTranslations(currentLang);
+        resetCalculatorUI();
+        updatePatternSequence();
+
     </script>
+
 </body>
 </html>
