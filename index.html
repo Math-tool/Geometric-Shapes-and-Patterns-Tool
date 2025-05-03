@@ -13,90 +13,91 @@
         /* Base Styles */
         body {
             font-family: 'Inter', 'Cairo', sans-serif;
-            overscroll-behavior: none;
+            overscroll-behavior: none; /* Prevents pull-to-refresh */
             display: flex;
-            flex-direction: column;
-            height: 100vh;
+            flex-direction: column; /* Stack main container and pattern bar vertically */
+            height: 100vh; /* Full viewport height */
             margin: 0;
             background-color: #f0f4f8; /* Light grayish blue background */
         }
 
         /* Layout */
         .main-container {
-            display: flex;
-            flex-grow: 1;
+            display: flex; /* Arrange toolbar, workspace, calculator horizontally */
+            flex-grow: 1; /* Allow this container to grow and fill available vertical space */
             overflow: hidden; /* Prevent scrolling on main parts */
+            /* Removed fixed height calculation to allow flex grow */
         }
 
         /* Toolbar */
         #shape-toolbar {
-            width: 100px; /* Increased width slightly for palettes */
+            width: 100px; /* Width for toolbar */
             background-color: #e2e8f0; /* Gray 200 */
             padding: 1rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1.5rem; /* Increased gap */
-            overflow-y: auto;
+            gap: 1.5rem; /* Spacing between shapes */
+            overflow-y: auto; /* Allow scrolling if many shapes */
             border-right: 1px solid #cbd5e1; /* Gray 300 */
-            flex-shrink: 0;
+            flex-shrink: 0; /* Prevent toolbar from shrinking */
             position: relative; /* Needed for absolute positioning of palettes */
         }
-        [dir="rtl"] #shape-toolbar {
+        [dir="rtl"] #shape-toolbar { /* RTL support */
             border-right: none;
             border-left: 1px solid #cbd5e1; /* Gray 300 */
         }
-        .toolbar-shape-container { /* New wrapper */
-            position: relative; /* For palette positioning */
-            display: flex; /* Center shape */
+        .toolbar-shape-container { /* Wrapper for shape and palette */
+            position: relative;
+            display: flex;
             justify-content: center;
             width: 100%;
         }
         .toolbar-shape {
             width: 50px;
             height: 50px;
-            border: 2px solid #bdc8d5;
+            border: 2px solid #bdc8d5; /* Default border */
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: grab;
-            background-color: #ffffff;
-            border-radius: 8px;
+            cursor: grab; /* Indicate draggable */
+            background-color: #ffffff; /* White background */
+            border-radius: 8px; /* Rounded corners */
             transition: transform 0.1s ease, border-color 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            z-index: 1; /* Ensure shape is above hidden palette initially */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Subtle shadow */
+            z-index: 1; /* Base z-index */
         }
         .toolbar-shape.palette-active { /* Style when palette is shown */
              border-color: #3b82f6; /* Blue highlight */
         }
         .toolbar-shape:active { /* Style when actively dragging */
             cursor: grabbing;
-            transform: scale(1.1);
+            transform: scale(1.1); /* Slightly enlarge */
             border-style: solid;
             border-color: #64748b; /* Gray 500 */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Stronger shadow */
             z-index: 1000; /* Bring to front when dragging */
         }
-        .toolbar-shape svg {
+        .toolbar-shape svg { /* SVG inside toolbar shape */
             width: 70%;
             height: 70%;
-            pointer-events: none;
+            pointer-events: none; /* Prevent SVG from interfering with drag */
         }
         /* Toolbar Color Palette */
         .toolbar-color-palette {
             position: absolute;
             display: none; /* Hidden by default */
-            flex-direction: row;
-            gap: 4px;
-            background-color: rgba(255, 255, 255, 0.95);
+            flex-direction: row; /* Arrange swatches horizontally */
+            gap: 4px; /* Space between swatches */
+            background-color: rgba(255, 255, 255, 0.95); /* Semi-transparent white */
             padding: 5px;
             border-radius: 15px; /* Rounded pill shape */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            z-index: 5; /* Above other toolbar items but below dragged item */
-            /* Position it below the shape */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); /* Palette shadow */
+            z-index: 5; /* Above other toolbar items */
+            /* Position below the shape */
             bottom: -15px; /* Overlap slightly */
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%); /* Center horizontally */
         }
         .toolbar-shape-container.show-palette .toolbar-color-palette {
             display: flex; /* Show when parent has class */
@@ -104,49 +105,48 @@
         .toolbar-color-swatch {
             width: 18px;
             height: 18px;
-            border-radius: 50%;
+            border-radius: 50%; /* Circular swatches */
             cursor: pointer;
             border: 2px solid #e2e8f0; /* Light border */
             transition: transform 0.1s ease;
         }
         .toolbar-color-swatch:hover {
-            transform: scale(1.2);
-            border-color: #94a3b8;
+            transform: scale(1.2); /* Enlarge on hover */
+            border-color: #94a3b8; /* Darker border on hover */
         }
 
 
         /* Workspace */
         #workspace-area {
-            flex-grow: 1;
-            position: relative;
-            background-color: #ffffff;
-            overflow: hidden;
-            border: 1px solid #e2e8f0;
+            flex-grow: 1; /* Allow workspace to grow and fill horizontal space */
+            position: relative; /* For absolute positioning of shapes */
+            background-color: #ffffff; /* White workspace */
+            overflow: hidden; /* Prevent shapes dragging out visually */
+            border: 1px solid #e2e8f0; /* Light border */
+            height: 100%; /* Make workspace fill the height of main-container */
         }
         .workspace-shape {
-            position: absolute;
-            border: 2px solid transparent;
-            cursor: move;
-            touch-action: none;
-            box-sizing: border-box;
+            position: absolute; /* Position shapes freely */
+            border: 2px solid transparent; /* Border shown when selected */
+            cursor: move; /* Indicate draggable */
+            touch-action: none; /* Prevent default touch actions like scrolling */
+            box-sizing: border-box; /* Include border in size */
             display: flex;
             align-items: center;
             justify-content: center;
-             /* *** Need z-index for dragging over pattern bar *** */
-            z-index: 5;
+            z-index: 5; /* Default z-index for workspace shapes */
         }
-        .workspace-shape svg {
+        .workspace-shape svg { /* SVG inside workspace shape */
             width: 100%;
             height: 100%;
             display: block;
-            pointer-events: none;
+            pointer-events: none; /* Prevent SVG interference */
         }
         .workspace-shape.selected {
-            border: 2px dashed #3b82f6;
-            z-index: 10;
+            border: 2px dashed #3b82f6; /* Dashed blue border when selected */
+            z-index: 10; /* Bring selected shape slightly forward */
         }
-        /* Style for dragging workspace shape */
-        .workspace-shape.dragging {
+        .workspace-shape.dragging { /* Style when dragging a workspace shape */
             opacity: 0.7;
             z-index: 1001; /* Ensure it's above toolbar drag */
         }
@@ -154,68 +154,69 @@
 
         /* Calculator Panel */
         #calculator-panel {
-            width: 300px;
-            background-color: #f8fafc;
+            width: 300px; /* Fixed width */
+            background-color: #f8fafc; /* Very light gray */
             padding: 1rem;
-            overflow-y: auto;
-            border-left: 1px solid #cbd5e1;
-            flex-shrink: 0;
-            font-size: 0.9rem;
+            overflow-y: auto; /* Allow scrolling if content overflows */
+            border-left: 1px solid #cbd5e1; /* Separator line */
+            flex-shrink: 0; /* Prevent shrinking */
+            font-size: 0.9rem; /* Slightly smaller font */
+            height: 100%; /* Make calculator fill the height of main-container */
         }
-        [dir="rtl"] #calculator-panel {
+        [dir="rtl"] #calculator-panel { /* RTL support */
             border-left: none;
             border-right: 1px solid #cbd5e1;
         }
-        #calculator-panel h3 {
+        #calculator-panel h3 { /* Panel title */
             font-weight: bold;
             margin-bottom: 0.75rem;
-            color: #1e293b;
+            color: #1e293b; /* Dark slate color */
             font-size: 1rem;
         }
-         #calculator-panel label {
+         #calculator-panel label { /* Input labels */
             display: block;
             margin-bottom: 0.25rem;
-            font-weight: 500;
-            color: #475569;
+            font-weight: 500; /* Medium weight */
+            color: #475569; /* Slate gray */
          }
          #calculator-panel input[type="number"],
-         #calculator-panel select {
+         #calculator-panel select { /* Input fields and selects */
             width: 100%;
             padding: 0.4rem 0.6rem;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
+            border: 1px solid #cbd5e1; /* Gray border */
+            border-radius: 6px; /* Rounded corners */
             margin-bottom: 0.75rem;
             box-sizing: border-box;
          }
          #calculator-panel input:focus,
-         #calculator-panel select:focus {
-            outline: 2px solid #60a5fa;
+         #calculator-panel select:focus { /* Focus style */
+            outline: 2px solid #60a5fa; /* Blue outline */
             outline-offset: 1px;
-            border-color: #93c5fd;
+            border-color: #93c5fd; /* Lighter blue border */
          }
-         #formula-display, #result-display {
+         #formula-display, #result-display { /* Result areas */
             margin-top: 1rem;
             padding: 0.75rem;
-            background-color: #e0f2fe;
-            border: 1px solid #bae6fd;
+            background-color: #e0f2fe; /* Light blue background */
+            border: 1px solid #bae6fd; /* Lighter blue border */
             border-radius: 6px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            color: #075985;
+            white-space: pre-wrap; /* Allow wrapping */
+            word-wrap: break-word; /* Break long words */
+            color: #075985; /* Dark blue text */
             line-height: 1.6;
          }
-         #result-display {
-             background-color: #dcfce7;
-             border-color: #bbf7d0;
-             color: #15803d;
-             font-weight: bold;
+         #result-display { /* Specific style for final result */
+            background-color: #dcfce7; /* Light green background */
+            border-color: #bbf7d0; /* Lighter green border */
+            color: #15803d; /* Dark green text */
+            font-weight: bold;
          }
-         .calc-section {
-             margin-bottom: 1.5rem;
-             padding-bottom: 1rem;
-             border-bottom: 1px dashed #e2e8f0;
+         .calc-section { /* Spacing and separator for calculator sections */
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px dashed #e2e8f0; /* Dashed separator */
          }
-        .calc-section:last-child {
+        .calc-section:last-child { /* Remove border from last section */
             border-bottom: none;
             margin-bottom: 0;
         }
@@ -223,39 +224,41 @@
 
         /* Pattern Bar */
         #pattern-bar {
-            height: 90px;
-            background-color: #e2e8f0;
+            height: 90px; /* Fixed height */
+            background-color: #e2e8f0; /* Gray background */
             padding: 0.5rem 1rem;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            border-top: 1px solid #cbd5e1;
-            overflow-x: auto;
-            flex-shrink: 0;
+            gap: 0.75rem; /* Space between slots */
+            border-top: 1px solid #cbd5e1; /* Separator line */
+            overflow-x: auto; /* Allow horizontal scrolling */
+            flex-shrink: 0; /* Prevent shrinking - crucial for flex layout */
         }
         .pattern-slot {
             width: 60px;
             height: 60px;
-            background-color: #f1f5f9;
-            border: 2px dashed #cbd5e1;
+            background-color: #f1f5f9; /* Lighter gray background */
+            border: 2px dashed #cbd5e1; /* Dashed border */
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
-            position: relative;
+            flex-shrink: 0; /* Prevent slots from shrinking */
+            position: relative; /* For remove button positioning */
         }
-        .pattern-slot.drop-active { border-color: #60a5fa; background-color: #dbeafe; }
-        .pattern-slot.drop-target { border-color: #34d399; background-color: #a7f3d0; border-style: solid; }
-        .pattern-slot svg { width: 60%; height: 60%; pointer-events: none; }
-        .pattern-slot .remove-btn {
+        /* Dropzone feedback styles */
+        .pattern-slot.drop-active { border-color: #60a5fa; background-color: #dbeafe; } /* Blue when draggable is over */
+        .pattern-slot.drop-target { border-color: #34d399; background-color: #a7f3d0; border-style: solid; } /* Green when about to drop */
+        .pattern-slot svg { width: 60%; height: 60%; pointer-events: none; } /* SVG inside slot */
+        .pattern-slot .remove-btn { /* Small 'x' button to remove shape */
             position: absolute; top: -5px; right: -5px;
-            [dir="rtl"] & { right: auto; left: -5px; }
-            width: 18px; height: 18px; background-color: #ef4444; color: white;
+            [dir="rtl"] & { right: auto; left: -5px; } /* RTL support */
+            width: 18px; height: 18px; background-color: #ef4444; color: white; /* Red button */
             border-radius: 50%; border: 1px solid white; font-size: 10px; line-height: 16px;
-            text-align: center; cursor: pointer; display: none; z-index: 5;
+            text-align: center; cursor: pointer; display: none; /* Hidden by default */
+            z-index: 5;
         }
-        .pattern-slot:hover .remove-btn { display: block; }
+        .pattern-slot:hover .remove-btn { display: block; } /* Show remove button on hover */
 
 
         /* Buttons */
@@ -268,6 +271,7 @@
         .btn-success:hover { background-color: #16a34a; }
         .btn-danger { background-color: #ef4444; color: white; border-color: #ef4444; }
         .btn-danger:hover { background-color: #dc2626; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; } /* Style for disabled buttons */
 
         /* Language Toggle */
         #lang-toggle { position: absolute; top: 10px; right: 10px; z-index: 50; }
@@ -275,19 +279,34 @@
 
         /* Feedback Message */
         #feedback-message {
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            padding: 0.75rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            font-weight: 500; z-index: 100; display: none; transition: opacity 0.3s ease;
+            position: fixed;
+            bottom: 100px; /* Position above pattern bar */
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            font-weight: 500;
+            z-index: 100; /* Ensure visibility */
+            display: none; /* Hidden by default */
+            transition: opacity 0.3s ease;
+            opacity: 0; /* Start transparent for fade-in */
         }
-        #feedback-message.success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-        #feedback-message.error { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+        #feedback-message.success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; } /* Green for success */
+        #feedback-message.error { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; } /* Red for error */
 
         /* InteractJS Resize Handles */
         .resize-handle {
-          position: absolute; width: 10px; height: 10px; background-color: #3b82f6;
-          border: 1px solid white; border-radius: 50%; z-index: 20; display: none;
+            position: absolute;
+            width: 10px; height: 10px;
+            background-color: #3b82f6; /* Blue handles */
+            border: 1px solid white;
+            border-radius: 50%;
+            z-index: 20; /* Above shape border */
+            display: none; /* Hidden by default */
         }
-        .workspace-shape.selected .resize-handle { display: block; }
+        .workspace-shape.selected .resize-handle { display: block; } /* Show on selected shape */
+        /* Positioning and cursor for each handle */
         .resize-handle-top-left { top: -5px; left: -5px; cursor: nwse-resize; }
         .resize-handle-top-right { top: -5px; right: -5px; cursor: nesw-resize; }
         .resize-handle-bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
@@ -297,6 +316,7 @@
         .resize-handle-left { left: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
         .resize-handle-right { right: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
 
+        /* Hide non-corner handles for circles (as they only need corner resize) */
         .workspace-shape[data-shape-type="circle"] .resize-handle-top,
         .workspace-shape[data-shape-type="circle"] .resize-handle-bottom,
         .workspace-shape[data-shape-type="circle"] .resize-handle-left,
@@ -320,38 +340,32 @@
                 <div class="toolbar-shape draggable" data-shape-type="rectangle" title="Rectangle / مستطيل">
                     <svg viewBox="0 0 100 100" fill="#60a5fa"><rect x="10" y="20" width="80" height="60"/></svg>
                 </div>
-                 <div class="toolbar-color-palette"></div>
-            </div>
+                 <div class="toolbar-color-palette"></div> </div>
             <div class="toolbar-shape-container">
                 <div class="toolbar-shape draggable" data-shape-type="triangle" title="Triangle / مثلث">
                     <svg viewBox="0 0 100 100" fill="#34d399"><polygon points="50,10 90,90 10,90"/></svg>
                 </div>
-                 <div class="toolbar-color-palette"></div>
-            </div>
+                 <div class="toolbar-color-palette"></div> </div>
             <div class="toolbar-shape-container">
                 <div class="toolbar-shape draggable" data-shape-type="circle" title="Circle / دائرة">
                     <svg viewBox="0 0 100 100" fill="#facc15"><circle cx="50" cy="50" r="40"/></svg>
                 </div>
-                 <div class="toolbar-color-palette"></div>
-            </div>
+                 <div class="toolbar-color-palette"></div> </div>
              <div class="toolbar-shape-container">
                 <div class="toolbar-shape draggable" data-shape-type="rhombus" title="Rhombus / معين">
                     <svg viewBox="0 0 100 100" fill="#c084fc"><polygon points="50,10 90,50 50,90 10,50"/></svg>
                 </div>
-                 <div class="toolbar-color-palette"></div>
-            </div>
+                 <div class="toolbar-color-palette"></div> </div>
              <div class="toolbar-shape-container">
                 <div class="toolbar-shape draggable" data-shape-type="parallelogram" title="Parallelogram / متوازي أضلاع">
                     <svg viewBox="0 0 100 100" fill="#fb923c"><polygon points="25,10 90,10 75,90 10,90"/></svg>
                 </div>
-                 <div class="toolbar-color-palette"></div>
-            </div>
+                 <div class="toolbar-color-palette"></div> </div>
              <div class="toolbar-shape-container">
                 <div class="toolbar-shape draggable" data-shape-type="trapezoid" title="Trapezoid / شبه منحرف">
                     <svg viewBox="0 0 100 100" fill="#2dd4bf"><polygon points="20,10 80,10 95,90 5,90"/></svg>
                 </div>
-                 <div class="toolbar-color-palette"></div>
-            </div>
+                 <div class="toolbar-color-palette"></div> </div>
         </div>
 
         <div id="workspace-area" class="dropzone">
@@ -362,7 +376,7 @@
 
             <div id="shape-info-section" class="calc-section hidden">
                 <p><strong data-translate="selectedShape">Selected Shape:</strong> <span id="selected-shape-name">None</span></p>
-                 </div>
+            </div>
 
             <div id="calculation-mode-section" class="calc-section hidden">
                  <label for="calculation-mode" data-translate="calculationModeLabel">Calculation Mode:</label>
@@ -374,8 +388,9 @@
             </div>
 
             <div id="inputs-calc" class="calc-section hidden">
-                <h4 class="font-semibold mb-2" data-translate="knownDimensions">Known Dimensions:</h4>
-                 <div id="known-dimensions-inputs"></div>
+                <h4 class="font-semibold mb-2" data-translate="knownDimensions">Enter Dimensions:</h4>
+                 <div id="known-dimensions-inputs">
+                     </div>
             </div>
 
             <div id="inputs-find" class="calc-section hidden">
@@ -386,12 +401,14 @@
                      <option value="perimeter" data-translate="perimeter">Perimeter</option>
                  </select>
                  <label for="known-metric-value" data-translate="knownValueLabel">Known Value:</label>
-                 <input type="number" step="any" id="known-metric-value" placeholder="e.g., 20.5"> <label for="known-dimension-name" data-translate="knownDimensionLabel">Known Dimension:</label>
+                 <input type="number" step="any" id="known-metric-value" placeholder="e.g., 20.5">
+
+                 <label for="known-dimension-name" data-translate="knownDimensionLabel">Known Dimension:</label>
                  <select id="known-dimension-name">
                      </select>
                  <label for="known-dimension-value" data-translate="knownValueLabel">Known Value:</label>
-                 <input type="number" step="any" id="known-dimension-value" placeholder="e.g., 5.2"> </div>
-
+                 <input type="number" step="any" id="known-dimension-value" placeholder="e.g., 5.2">
+            </div>
 
             <div id="solve-button-section" class="calc-section hidden">
                 <button id="solve-button" class="btn btn-primary w-full" data-translate="solveButton">Solve</button>
@@ -407,7 +424,7 @@
                 <div id="result-display"></div>
             </div>
 
-             <div id="no-shape-message" class="text-center text-gray-500">
+            <div id="no-shape-message" class="text-center text-gray-500 mt-4">
                  <p data-translate="noShapeSelected">Drag a shape to the workspace and select it to use the calculator.</p>
              </div>
 
@@ -425,7 +442,13 @@
         <div class="pattern-slot dropzone"></div>
         <div class="pattern-slot dropzone"></div>
         <div class="pattern-slot dropzone"></div>
-        <button id="check-pattern-button" class="btn btn-success ml-auto self-center" data-translate="checkPatternButton">Check Pattern</button>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <div class="pattern-slot dropzone"></div>
+        <button id="check-pattern-button" class="btn btn-success ml-auto self-center" data-translate="checkPatternButton" disabled>Check Pattern</button>
         <button id="clear-pattern-button" class="btn btn-danger ml-2 self-center" data-translate="clearPatternButton">Clear</button>
     </div>
 
@@ -434,6 +457,7 @@
 
     <script>
         // --- Translations ---
+        // Provides text for English and Arabic languages
         const translations = {
             en: {
                 calculatorTitle: "Calculator", selectedShape: "Selected Shape:", dimensions: "Dimensions:",
@@ -445,7 +469,7 @@
                 knownDimensionLabel: "Known Dimension:", solveButton: "Solve", formulaTitle: "Formula:", resultTitle: "Result:",
                 noShapeSelected: "Drag a shape to the workspace and select it to use the calculator.",
                 patternBarLabel: "Pattern:", checkPatternButton: "Check Pattern", clearPatternButton: "Clear",
-                feedbackPatternCorrect: "Correct pattern!", feedbackPatternIncorrect: "Not a valid repeating pattern, try again.",
+                feedbackPatternCorrect: "Correct pattern!", feedbackPatternIncorrect: "Not a valid repeating pattern (check shapes and colors), try again.", // Modified feedback
                 feedbackShapeRemoved: "Shape removed from pattern.", switchToAr: "Switch to عربي", switchToEn: "Switch to English",
                 square: "Square", rectangle: "Rectangle", triangle: "Triangle", circle: "Circle", rhombus: "Rhombus",
                 parallelogram: "Parallelogram", trapezoid: "Trapezoid", side: "Side", length: "Length", width: "Width",
@@ -466,7 +490,7 @@
                 knownDimensionLabel: "البعد المعروف:", solveButton: "حل", formulaTitle: "الصيغة:", resultTitle: "النتيجة:",
                 noShapeSelected: "اسحب شكلاً إلى مساحة العمل وحدده لاستخدام الحاسبة.",
                 patternBarLabel: "النمط:", checkPatternButton: "تحقق من النمط", clearPatternButton: "مسح",
-                feedbackPatternCorrect: "نمط صحيح!", feedbackPatternIncorrect: "ليس نمطًا متكررًا صالحًا، حاول مرة أخرى.",
+                feedbackPatternCorrect: "نمط صحيح!", feedbackPatternIncorrect: "ليس نمطًا متكررًا صالحًا (تحقق من الأشكال والألوان)، حاول مرة أخرى.", // Modified feedback
                 feedbackShapeRemoved: "تمت إزالة الشكل من النمط.", switchToAr: "التبديل إلى عربي", switchToEn: "التبديل إلى الإنجليزية",
                 square: "مربع", rectangle: "مستطيل", triangle: "مثلث", circle: "دائرة", rhombus: "معين",
                 parallelogram: "متوازي أضلاع", trapezoid: "شبه منحرف", side: "ضلع", length: "طول", width: "عرض",
@@ -480,23 +504,27 @@
         };
 
         // --- Global State ---
-        let currentLang = 'en';
-        let selectedShapeElement = null;
-        let shapeCounter = 0;
-        let patternSequence = [];
-        const availableToolbarColors = ['#f87171', '#60a5fa', '#34d399', '#facc15', '#c084fc'];
+        let currentLang = 'en'; // Current language
+        let selectedShapeElement = null; // Reference to the currently selected workspace shape
+        let shapeCounter = 0; // Counter for unique shape IDs
+        let patternSequence = []; // Array to store pattern items {type, color} or null
+        let dragStartPosition = { x: 0, y: 0 }; // To store start position for drag snapping
+        // Available colors for the toolbar palettes
+        const availableToolbarColors = ['#f87171', '#60a5fa', '#34d399', '#facc15', '#c084fc', '#fb923c', '#2dd4bf', '#a78bfa', '#f472b6', '#78716c']; // Added more colors
 
         // --- DOM Elements ---
+        // Cache frequently accessed DOM elements for performance
         const langToggleButton = document.getElementById('lang-toggle');
         const htmlElement = document.documentElement;
         const shapeToolbar = document.getElementById('shape-toolbar');
         const workspace = document.getElementById('workspace-area');
         const calculatorPanel = document.getElementById('calculator-panel');
         const patternBar = document.getElementById('pattern-bar');
-        const patternSlots = patternBar.querySelectorAll('.pattern-slot');
+        const patternSlots = patternBar.querySelectorAll('.pattern-slot'); // This will now select all 14 slots
         const checkPatternButton = document.getElementById('check-pattern-button');
         const clearPatternButton = document.getElementById('clear-pattern-button');
         const feedbackMessage = document.getElementById('feedback-message');
+        // Calculator panel elements
         const noShapeMessage = document.getElementById('no-shape-message');
         const shapeInfoSection = document.getElementById('shape-info-section');
         const calculationModeSection = document.getElementById('calculation-mode-section');
@@ -518,640 +546,1291 @@
 
 
         // --- Shape Definitions & Formulas ---
-        const multiplySymbol = '×';
+        const multiplySymbol = '×'; // Use '×' for multiplication in formulas display
 
+        // Object containing formulas and dimension info for each shape type
         const shapeFormulas = {
             square: {
-                dims: ['side'], getArea: (d) => d.side * d.side, getPerimeter: (d) => 4 * d.side,
-                areaFormula: (l) => `A = ${translations[l].side} ${multiplySymbol} ${translations[l].side}`,
-                perimeterFormula: (l) => `P = 4 ${multiplySymbol} ${translations[l].side}`,
-                findDim: (m, mv, kd, kdv, l) => {
-                    if (m === 'area') { const s = Math.sqrt(mv); return (!isNaN(s) && s > 0) ? { dim: translations[l].side, value: formatNumber(s), steps: [`${translations[l].side} = √${mv} ≈ ${formatNumber(s)}`] } : { error: translations[l].invalidInput }; }
-                    else { const s = mv / 4; return (!isNaN(s) && s > 0) ? { dim: translations[l].side, value: formatNumber(s), steps: [`${translations[l].side} = ${mv} / 4 = ${formatNumber(s)}`] } : { error: translations[l].invalidInput }; }
+                dims: ['side'], // Dimensions needed
+                getArea: (d) => d.side * d.side, // Area calculation function
+                getPerimeter: (d) => 4 * d.side, // Perimeter calculation function
+                areaFormula: (l) => `A = ${getTranslate('side', l)} ${multiplySymbol} ${getTranslate('side', l)}`, // Area formula string (translatable)
+                perimeterFormula: (l) => `P = 4 ${multiplySymbol} ${getTranslate('side', l)}`, // Perimeter formula string (translatable)
+                // Function to find a missing dimension
+                findDim: (m, mv, kd, kdv, l) => { // m=metric, mv=metricValue, kd=knownDim, kdv=knownDimValue, l=lang
+                    if (m === 'area') { // Find side from area
+                        const s = Math.sqrt(mv);
+                        return (!isNaN(s) && s > 0) ? { dim: getTranslate('side', l), value: formatNumber(s), steps: [`${getTranslate('side', l)} = √${formatNumber(mv)} ≈ ${formatNumber(s)}`] } : { error: getTranslate('invalidInput', l) };
+                    } else { // Find side from perimeter
+                        const s = mv / 4;
+                        return (!isNaN(s) && s > 0) ? { dim: getTranslate('side', l), value: formatNumber(s), steps: [`${getTranslate('side', l)} = ${formatNumber(mv)} / 4 = ${formatNumber(s)}`] } : { error: getTranslate('invalidInput', l) };
+                    }
                 }
             },
             rectangle: {
-                dims: ['length', 'width'], getArea: (d) => d.length * d.width, getPerimeter: (d) => 2 * (d.length + d.width),
-                areaFormula: (l) => `A = ${translations[l].length} ${multiplySymbol} ${translations[l].width}`,
-                perimeterFormula: (l) => `P = 2 ${multiplySymbol} (${translations[l].length} + ${translations[l].width})`,
+                dims: ['length', 'width'],
+                getArea: (d) => d.length * d.width,
+                getPerimeter: (d) => 2 * (d.length + d.width),
+                areaFormula: (l) => `A = ${getTranslate('length', l)} ${multiplySymbol} ${getTranslate('width', l)}`,
+                perimeterFormula: (l) => `P = 2 ${multiplySymbol} (${getTranslate('length', l)} + ${getTranslate('width', l)})`,
                 findDim: (m, mv, kd, kdv, l) => {
-                    if (!kd || isNaN(kdv) || kdv <= 0) return { error: translations[l].valueMissing };
-                    if (m === 'area') {
-                        if (kd === 'length') { const w = mv / kdv; return (!isNaN(w) && w > 0) ? { dim: translations[l].width, value: formatNumber(w), steps: [`${translations[l].width} = ${mv} / ${kdv} = ${formatNumber(w)}`] } : { error: translations[l].invalidInput }; }
-                        else { const len = mv / kdv; return (!isNaN(len) && len > 0) ? { dim: translations[l].length, value: formatNumber(len), steps: [`${translations[l].length} = ${mv} / ${kdv} = ${formatNumber(len)}`] } : { error: translations[l].invalidInput }; }
-                    } else {
-                        const hp = mv / 2;
-                        if (kd === 'length') { const w = hp - kdv; return (!isNaN(w) && w > 0) ? { dim: translations[l].width, value: formatNumber(w), steps: [`${translations[l].width} = (${mv} / 2) - ${kdv} = ${formatNumber(w)}`] } : { error: translations[l].invalidInput }; }
-                        else { const len = hp - kdv; return (!isNaN(len) && len > 0) ? { dim: translations[l].length, value: formatNumber(len), steps: [`${translations[l].length} = (${mv} / 2) - ${kdv} = ${formatNumber(len)}`] } : { error: translations[l].invalidInput }; }
+                    if (!kd || isNaN(kdv) || kdv <= 0) return { error: getTranslate('valueMissing', l) }; // Need one known dimension
+                    if (m === 'area') { // Find width from area and length, or vice versa
+                        if (kd === 'length') {
+                            const w = mv / kdv;
+                            return (!isNaN(w) && w > 0) ? { dim: getTranslate('width', l), value: formatNumber(w), steps: [`${getTranslate('width', l)} = ${formatNumber(mv)} / ${formatNumber(kdv)} = ${formatNumber(w)}`] } : { error: getTranslate('invalidInput', l) };
+                        } else { // kd === 'width'
+                            const len = mv / kdv;
+                            return (!isNaN(len) && len > 0) ? { dim: getTranslate('length', l), value: formatNumber(len), steps: [`${getTranslate('length', l)} = ${formatNumber(mv)} / ${formatNumber(kdv)} = ${formatNumber(len)}`] } : { error: getTranslate('invalidInput', l) };
+                        }
+                    } else { // Find width from perimeter and length, or vice versa
+                        const halfP = mv / 2;
+                        if (halfP <= kdv) return { error: getTranslate('invalidInput', l) }; // Known dim cannot be >= half perimeter
+                        if (kd === 'length') {
+                            const w = halfP - kdv;
+                            return (!isNaN(w) && w > 0) ? { dim: getTranslate('width', l), value: formatNumber(w), steps: [`${getTranslate('width', l)} = (${formatNumber(mv)} / 2) - ${formatNumber(kdv)} = ${formatNumber(w)}`] } : { error: getTranslate('invalidInput', l) };
+                        } else { // kd === 'width'
+                            const len = halfP - kdv;
+                            return (!isNaN(len) && len > 0) ? { dim: getTranslate('length', l), value: formatNumber(len), steps: [`${getTranslate('length', l)} = (${formatNumber(mv)} / 2) - ${formatNumber(kdv)} = ${formatNumber(len)}`] } : { error: getTranslate('invalidInput', l) };
+                        }
                     }
                 }
             },
-             triangle: {
-                dims: ['base', 'height', 'sideA', 'sideB', 'sideC'], getArea: (d) => 0.5 * d.base * d.height, getPerimeter: (d) => d.sideA + d.sideB + d.sideC,
-                areaFormula: (l) => `A = 0.5 ${multiplySymbol} ${translations[l].base} ${multiplySymbol} ${translations[l].height}`,
-                perimeterFormula: (l) => `P = ${translations[l].sideA} + ${translations[l].sideB} + ${translations[l].sideC}`,
+            triangle: { // Note: Assumes base and height for area, sides for perimeter. More complex cases not handled.
+                dims: ['base', 'height', 'sideA', 'sideB', 'sideC'],
+                getArea: (d) => 0.5 * d.base * d.height,
+                getPerimeter: (d) => d.sideA + d.sideB + d.sideC,
+                areaFormula: (l) => `A = 0.5 ${multiplySymbol} ${getTranslate('base', l)} ${multiplySymbol} ${getTranslate('height', l)}`,
+                perimeterFormula: (l) => `P = ${getTranslate('sideA', l)} + ${getTranslate('sideB', l)} + ${getTranslate('sideC', l)}`,
                 findDim: (m, mv, kd, kdv, l) => {
-                    if (m === 'area') {
-                        if (!kd || isNaN(kdv) || kdv <= 0) return { error: translations[l].valueMissing };
-                        if (kd === 'base') { const h = (2 * mv) / kdv; return (!isNaN(h) && h > 0) ? { dim: translations[l].height, value: formatNumber(h), steps: [`${translations[l].height} = (2 ${multiplySymbol} ${mv}) / ${kdv} = ${formatNumber(h)}`] } : { error: translations[l].invalidInput }; }
-                        else if (kd === 'height') { const b = (2 * mv) / kdv; return (!isNaN(b) && b > 0) ? { dim: translations[l].base, value: formatNumber(b), steps: [`${translations[l].base} = (2 ${multiplySymbol} ${mv}) / ${kdv} = ${formatNumber(b)}`] } : { error: translations[l].invalidInput }; }
-                        else { return { error: translations[l].cannotSolve }; }
-                    } else { return { error: translations[l].cannotSolve }; }
+                    if (m === 'area') { // Find height from area and base, or vice versa
+                        if (!kd || isNaN(kdv) || kdv <= 0) return { error: getTranslate('valueMissing', l) };
+                        if (kd === 'base') {
+                            const h = (2 * mv) / kdv;
+                            return (!isNaN(h) && h > 0) ? { dim: getTranslate('height', l), value: formatNumber(h), steps: [`${getTranslate('height', l)} = (2 ${multiplySymbol} ${formatNumber(mv)}) / ${formatNumber(kdv)} = ${formatNumber(h)}`] } : { error: getTranslate('invalidInput', l) };
+                        } else if (kd === 'height') {
+                            const b = (2 * mv) / kdv;
+                            return (!isNaN(b) && b > 0) ? { dim: getTranslate('base', l), value: formatNumber(b), steps: [`${getTranslate('base', l)} = (2 ${multiplySymbol} ${formatNumber(mv)}) / ${formatNumber(kdv)} = ${formatNumber(b)}`] } : { error: getTranslate('invalidInput', l) };
+                        } else { return { error: getTranslate('cannotSolve', l) }; } // Cannot find sides from area
+                    } else { return { error: getTranslate('cannotSolve', l) }; } // Cannot find area dims from perimeter, or one side from perimeter + other sides
                 }
             },
             circle: {
-                dims: ['radius'], getArea: (d) => Math.PI * d.radius * d.radius, getPerimeter: (d) => 2 * Math.PI * d.radius,
-                areaFormula: (l) => `A = π ${multiplySymbol} ${translations[l].radius}²`, perimeterFormula: (l) => `P = 2 ${multiplySymbol} π ${multiplySymbol} ${translations[l].radius}`,
+                dims: ['radius'],
+                getArea: (d) => Math.PI * d.radius * d.radius,
+                getPerimeter: (d) => 2 * Math.PI * d.radius, // Perimeter = Circumference
+                areaFormula: (l) => `A = π ${multiplySymbol} ${getTranslate('radius', l)}²`,
+                perimeterFormula: (l) => `P = 2 ${multiplySymbol} π ${multiplySymbol} ${getTranslate('radius', l)}`,
                 findDim: (m, mv, kd, kdv, l) => {
-                    if (m === 'area') { const r = Math.sqrt(mv / Math.PI); return (!isNaN(r) && r > 0) ? { dim: translations[l].radius, value: formatNumber(r), steps: [`${translations[l].radius} = √(${mv} / π) ≈ ${formatNumber(r)}`] } : { error: translations[l].invalidInput }; }
-                    else { const r = mv / (2 * Math.PI); return (!isNaN(r) && r > 0) ? { dim: translations[l].radius, value: formatNumber(r), steps: [`${translations[l].radius} = ${mv} / (2 ${multiplySymbol} π) ≈ ${formatNumber(r)}`] } : { error: translations[l].invalidInput }; }
-                }
-            },
-             rhombus: {
-                dims: ['side', 'diagonal1', 'diagonal2'], getArea: (d) => 0.5 * d.diagonal1 * d.diagonal2, getPerimeter: (d) => 4 * d.side,
-                areaFormula: (l) => `A = 0.5 ${multiplySymbol} ${translations[l].diagonal1} ${multiplySymbol} ${translations[l].diagonal2}`,
-                perimeterFormula: (l) => `P = 4 ${multiplySymbol} ${translations[l].side}`,
-                findDim: (m, mv, kd, kdv, l) => {
-                    if (m === 'area') {
-                        if (!kd || isNaN(kdv) || kdv <= 0) return { error: translations[l].valueMissing };
-                        if (kd === 'diagonal1') { const d2 = (2 * mv) / kdv; return (!isNaN(d2) && d2 > 0) ? { dim: translations[l].diagonal2, value: formatNumber(d2), steps: [`${translations[l].diagonal2} = (2 ${multiplySymbol} ${mv}) / ${kdv} = ${formatNumber(d2)}`] } : { error: translations[l].invalidInput }; }
-                        else if (kd === 'diagonal2') { const d1 = (2 * mv) / kdv; return (!isNaN(d1) && d1 > 0) ? { dim: translations[l].diagonal1, value: formatNumber(d1), steps: [`${translations[l].diagonal1} = (2 ${multiplySymbol} ${mv}) / ${kdv} = ${formatNumber(d1)}`] } : { error: translations[l].invalidInput }; }
-                        else { return { error: translations[l].cannotSolve }; }
-                    } else { const s = mv / 4; return (!isNaN(s) && s > 0) ? { dim: translations[l].side, value: formatNumber(s), steps: [`${translations[l].side} = ${mv} / 4 = ${formatNumber(s)}`] } : { error: translations[l].invalidInput }; }
-                }
-            },
-            parallelogram: {
-                dims: ['base', 'height', 'sideA', 'sideB'], getArea: (d) => d.base * d.height, getPerimeter: (d) => 2 * (d.sideA + d.sideB),
-                areaFormula: (l) => `A = ${translations[l].base} ${multiplySymbol} ${translations[l].height}`,
-                perimeterFormula: (l) => `P = 2 ${multiplySymbol} (${translations[l].sideA} + ${translations[l].sideB})`,
-                findDim: (m, mv, kd, kdv, l) => {
-                    if (!kd || isNaN(kdv) || kdv <= 0) return { error: translations[l].valueMissing };
-                    if (m === 'area') {
-                        if (kd === 'base') { const h = mv / kdv; return (!isNaN(h) && h > 0) ? { dim: translations[l].height, value: formatNumber(h), steps: [`${translations[l].height} = ${mv} / ${kdv} = ${formatNumber(h)}`] } : { error: translations[l].invalidInput }; }
-                        else if (kd === 'height') { const b = mv / kdv; return (!isNaN(b) && b > 0) ? { dim: translations[l].base, value: formatNumber(b), steps: [`${translations[l].base} = ${mv} / ${kdv} = ${formatNumber(b)}`] } : { error: translations[l].invalidInput }; }
-                        else { return { error: translations[l].cannotSolve }; }
-                    } else {
-                        const hp = mv / 2;
-                        if (kd === 'sideA') { const b = hp - kdv; return (!isNaN(b) && b > 0) ? { dim: translations[l].sideB, value: formatNumber(b), steps: [`${translations[l].sideB} = (${mv} / 2) - ${kdv} = ${formatNumber(b)}`] } : { error: translations[l].invalidInput }; }
-                        else if (kd === 'sideB') { const a = hp - kdv; return (!isNaN(a) && a > 0) ? { dim: translations[l].sideA, value: formatNumber(a), steps: [`${translations[l].sideA} = (${mv} / 2) - ${kdv} = ${formatNumber(a)}`] } : { error: translations[l].invalidInput }; }
-                        else { return { error: translations[l].cannotSolve }; }
+                    if (m === 'area') { // Find radius from area
+                        const r = Math.sqrt(mv / Math.PI);
+                        return (!isNaN(r) && r > 0) ? { dim: getTranslate('radius', l), value: formatNumber(r), steps: [`${getTranslate('radius', l)} = √(${formatNumber(mv)} / π) ≈ ${formatNumber(r)}`] } : { error: getTranslate('invalidInput', l) };
+                    } else { // Find radius from perimeter (circumference)
+                        const r = mv / (2 * Math.PI);
+                        return (!isNaN(r) && r > 0) ? { dim: getTranslate('radius', l), value: formatNumber(r), steps: [`${getTranslate('radius', l)} = ${formatNumber(mv)} / (2 ${multiplySymbol} π) ≈ ${formatNumber(r)}`] } : { error: getTranslate('invalidInput', l) };
                     }
                 }
             },
-            trapezoid: {
-                dims: ['baseA', 'baseB', 'height', 'sideC', 'sideD'], getArea: (d) => 0.5 * (d.baseA + d.baseB) * d.height, getPerimeter: (d) => d.baseA + d.baseB + d.sideC + d.sideD,
-                areaFormula: (l) => `A = 0.5 ${multiplySymbol} (${translations[l].base}A + ${translations[l].base}B) ${multiplySymbol} ${translations[l].height}`,
-                perimeterFormula: (l) => `P = ${translations[l].base}A + ${translations[l].base}B + ${translations[l].sideC} + ${translations[l].sideD}`,
-                findDim: (m, mv, kd, kdv, l) => { return { error: translations[l].cannotSolve }; }
+             rhombus: {
+                dims: ['side', 'diagonal1', 'diagonal2'],
+                getArea: (d) => 0.5 * d.diagonal1 * d.diagonal2,
+                getPerimeter: (d) => 4 * d.side,
+                areaFormula: (l) => `A = 0.5 ${multiplySymbol} ${getTranslate('diagonal1', l)} ${multiplySymbol} ${getTranslate('diagonal2', l)}`,
+                perimeterFormula: (l) => `P = 4 ${multiplySymbol} ${getTranslate('side', l)}`,
+                findDim: (m, mv, kd, kdv, l) => {
+                    if (m === 'area') { // Find one diagonal from area and the other diagonal
+                        if (!kd || isNaN(kdv) || kdv <= 0) return { error: getTranslate('valueMissing', l) };
+                        if (kd === 'diagonal1') {
+                            const d2 = (2 * mv) / kdv;
+                            return (!isNaN(d2) && d2 > 0) ? { dim: getTranslate('diagonal2', l), value: formatNumber(d2), steps: [`${getTranslate('diagonal2', l)} = (2 ${multiplySymbol} ${formatNumber(mv)}) / ${formatNumber(kdv)} = ${formatNumber(d2)}`] } : { error: getTranslate('invalidInput', l) };
+                        } else if (kd === 'diagonal2') {
+                            const d1 = (2 * mv) / kdv;
+                            return (!isNaN(d1) && d1 > 0) ? { dim: getTranslate('diagonal1', l), value: formatNumber(d1), steps: [`${getTranslate('diagonal1', l)} = (2 ${multiplySymbol} ${formatNumber(mv)}) / ${formatNumber(kdv)} = ${formatNumber(d1)}`] } : { error: getTranslate('invalidInput', l) };
+                        } else { return { error: getTranslate('cannotSolve', l) }; } // Cannot find side from area
+                    } else { // Find side from perimeter
+                        const s = mv / 4;
+                        return (!isNaN(s) && s > 0) ? { dim: getTranslate('side', l), value: formatNumber(s), steps: [`${getTranslate('side', l)} = ${formatNumber(mv)} / 4 = ${formatNumber(s)}`] } : { error: getTranslate('invalidInput', l) };
+                    } // Cannot find diagonals from perimeter
+                }
+            },
+            parallelogram: {
+                dims: ['base', 'height', 'sideA', 'sideB'], // sideA/B are the non-base sides
+                getArea: (d) => d.base * d.height,
+                getPerimeter: (d) => 2 * (d.sideA + d.sideB),
+                areaFormula: (l) => `A = ${getTranslate('base', l)} ${multiplySymbol} ${getTranslate('height', l)}`,
+                perimeterFormula: (l) => `P = 2 ${multiplySymbol} (${getTranslate('sideA', l)} + ${getTranslate('sideB', l)})`,
+                findDim: (m, mv, kd, kdv, l) => {
+                    if (m === 'area') { // Find height from area and base, or vice versa
+                        if (!kd || isNaN(kdv) || kdv <= 0) return { error: getTranslate('valueMissing', l) };
+                        if (kd === 'base') {
+                            const h = mv / kdv;
+                            return (!isNaN(h) && h > 0) ? { dim: getTranslate('height', l), value: formatNumber(h), steps: [`${getTranslate('height', l)} = ${formatNumber(mv)} / ${formatNumber(kdv)} = ${formatNumber(h)}`] } : { error: getTranslate('invalidInput', l) };
+                        } else if (kd === 'height') {
+                            const b = mv / kdv;
+                            return (!isNaN(b) && b > 0) ? { dim: getTranslate('base', l), value: formatNumber(b), steps: [`${getTranslate('base', l)} = ${formatNumber(mv)} / ${formatNumber(kdv)} = ${formatNumber(b)}`] } : { error: getTranslate('invalidInput', l) };
+                        } else { return { error: getTranslate('cannotSolve', l) }; } // Cannot find sides from area
+                    } else { // Find one side from perimeter and the other side
+                         if (!kd || isNaN(kdv) || kdv <= 0) return { error: getTranslate('valueMissing', l) };
+                         const halfP = mv / 2;
+                         if (halfP <= kdv) return { error: getTranslate('invalidInput', l) }; // Known side cannot be >= half perimeter
+                         if (kd === 'sideA') {
+                             const b = halfP - kdv;
+                             return (!isNaN(b) && b > 0) ? { dim: getTranslate('sideB', l), value: formatNumber(b), steps: [`${getTranslate('sideB', l)} = (${formatNumber(mv)} / 2) - ${formatNumber(kdv)} = ${formatNumber(b)}`] } : { error: getTranslate('invalidInput', l) };
+                         } else if (kd === 'sideB') {
+                             const a = halfP - kdv;
+                             return (!isNaN(a) && a > 0) ? { dim: getTranslate('sideA', l), value: formatNumber(a), steps: [`${getTranslate('sideA', l)} = (${formatNumber(mv)} / 2) - ${formatNumber(kdv)} = ${formatNumber(a)}`] } : { error: getTranslate('invalidInput', l) };
+                         } else { return { error: getTranslate('cannotSolve', l) }; } // Cannot find base/height from perimeter
+                    }
+                }
+            },
+            trapezoid: { // General trapezoid
+                dims: ['baseA', 'baseB', 'height', 'sideC', 'sideD'], // baseA/B are parallel sides
+                getArea: (d) => 0.5 * (d.baseA + d.baseB) * d.height,
+                getPerimeter: (d) => d.baseA + d.baseB + d.sideC + d.sideD,
+                areaFormula: (l) => `A = 0.5 ${multiplySymbol} (${getTranslate('base', l)}A + ${getTranslate('base', l)}B) ${multiplySymbol} ${getTranslate('height', l)}`,
+                perimeterFormula: (l) => `P = ${getTranslate('base', l)}A + ${getTranslate('base', l)}B + ${getTranslate('sideC', l)} + ${getTranslate('sideD', l)}`,
+                findDim: (m, mv, kd, kdv, l) => { return { error: getTranslate('cannotSolve', l) }; } // Generally cannot solve for one missing dim without more info
             },
         };
 
         // --- Utility Functions ---
+
+        /**
+         * Formats a number for display (rounds if close to integer, else 2 decimal places).
+         * @param {number} num - The number to format.
+         * @returns {string} The formatted number as a string.
+         */
         function formatNumber(num) {
-            if (isNaN(num)) return num;
-            if (Math.abs(num - Math.round(num)) < 0.001) { return Math.round(num).toString(); }
-            else { return parseFloat(num.toFixed(2)).toString(); }
+            if (isNaN(num)) return num; // Return as is if not a number
+            // Check if the number is very close to an integer
+            if (Math.abs(num - Math.round(num)) < 0.001) {
+                return Math.round(num).toString();
+            } else {
+                // Otherwise, format to 2 decimal places, removing trailing zeros if needed
+                return parseFloat(num.toFixed(2)).toString();
+            }
         }
 
+        /**
+         * Gets a translated string for a given key and language.
+         * @param {string} key - The translation key.
+         * @param {string} [lang=currentLang] - The language code ('en' or 'ar').
+         * @returns {string} The translated string or the key itself if not found.
+         */
         function getTranslate(key, lang = currentLang) {
-            return translations[lang][key] || key;
+            return translations[lang]?.[key] || key;
         }
 
+        /**
+         * Applies translations to all elements with data-translate attribute.
+         * Also updates dynamic elements like calculator inputs/options and shape titles.
+         * @param {string} lang - The language code ('en' or 'ar').
+         */
         function applyTranslations(lang) {
+            // Translate static elements
             document.querySelectorAll('[data-translate]').forEach(el => {
                 const key = el.dataset.translate;
-                if (translations[lang] && translations[lang][key]) {
-                    if (el.tagName === 'INPUT' && el.placeholder) { el.placeholder = translations[lang][key]; }
-                    else if (el.tagName === 'OPTION') { el.textContent = translations[lang][key]; } // Update option text
-                    else { el.textContent = translations[lang][key]; }
+                const translation = getTranslate(key, lang);
+                if (el.tagName === 'INPUT' && el.placeholder) {
+                    el.placeholder = translation;
+                } else if (el.tagName === 'OPTION') {
+                    el.textContent = translation; // Update option text directly
+                } else {
+                    el.textContent = translation;
                 }
             });
+
+             // Update toolbar shape titles (English / Arabic)
              document.querySelectorAll('.toolbar-shape').forEach(el => {
                  const shapeType = el.dataset.shapeType;
                  const enName = translations.en[shapeType] || shapeType;
                  const arName = translations.ar[shapeType] || shapeType;
                  el.title = `${enName} / ${arName}`;
              });
+
+            // Update language toggle button text
             langToggleButton.textContent = getTranslate(lang === 'en' ? 'switchToAr' : 'switchToEn', lang);
-            if (selectedShapeElement) { updateCalculatorUI(selectedShapeElement.dataset.shapeType); }
-            else { resetCalculatorUI(); }
+
+            // Refresh calculator UI if a shape is selected to update labels/options
+            if (selectedShapeElement) {
+                updateCalculatorUI(selectedShapeElement.dataset.shapeType);
+            } else {
+                resetCalculatorUI(); // Ensure calculator is in default state if no shape selected
+            }
+
+             // Ensure pattern check button state is correct after language change
              updatePatternCheckButton();
+             // Repopulate color palettes (though colors themselves aren't translated)
              populateAllToolbarPalettes();
         }
 
+        /**
+         * Toggles the language between English and Arabic and updates the UI.
+         */
         function toggleLanguage() {
             currentLang = currentLang === 'en' ? 'ar' : 'en';
             htmlElement.lang = currentLang;
-            htmlElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-            applyTranslations(currentLang);
+            htmlElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr'; // Set text direction
+            applyTranslations(currentLang); // Update all text
         }
 
+        /**
+         * Shows a temporary feedback message at the bottom center.
+         * @param {string} messageKey - The translation key for the message.
+         * @param {string} [type='success'] - 'success' or 'error'.
+         * @param {number} [duration=3000] - Duration in milliseconds.
+         */
         function showFeedback(messageKey, type = 'success', duration = 3000) {
             const messageText = getTranslate(messageKey);
             feedbackMessage.textContent = messageText;
-            feedbackMessage.className = type;
-            feedbackMessage.style.display = 'block'; feedbackMessage.style.opacity = 1;
+            // Reset classes and apply type-specific class
+            feedbackMessage.className = ''; // Clear existing classes
+            // Reapply base styles from CSS (avoids needing Tailwind classes here)
+            feedbackMessage.classList.add('feedback', type); // Add base and type class from CSS
+
+            feedbackMessage.style.display = 'block';
+            // Force reflow to ensure transition works on display change
+            void feedbackMessage.offsetWidth;
+            feedbackMessage.style.opacity = 1; // Fade in
+
+            // Set timeout to fade out and hide
             setTimeout(() => {
                 feedbackMessage.style.opacity = 0;
-                 setTimeout(() => { feedbackMessage.style.display = 'none'; }, 300);
+                 // Wait for fade out transition to complete before hiding
+                 setTimeout(() => { feedbackMessage.style.display = 'none'; }, 300); // 300ms matches transition duration
             }, duration);
         }
 
-        // --- Drag and Drop (Shapes) ---
-        let dragStartPosition = { x: 0, y: 0 };
+        // --- Drag and Drop Setup (using InteractJS) ---
 
-        interact('.draggable') // Applies to both toolbar and workspace shapes for pattern bar drop
+        /**
+         * Generic drag setup for all '.draggable' elements (toolbar and workspace shapes).
+         * Handles visual feedback, position tracking, and storing drag data (like start color).
+         */
+        interact('.draggable')
             .draggable({
-                inertia: true,
+                inertia: true, // Enable inertial movement after drag ends
                 listeners: {
                     start(event) {
                         const target = event.target;
-                        target.classList.add('dragging'); // Add dragging class
-                        target.style.zIndex = '1000';
-                        // Store color differently based on source
-                        let startColor = '#cccccc';
-                        if (target.classList.contains('toolbar-shape')) {
-                            const svg = target.querySelector('svg');
-                            startColor = svg ? svg.getAttribute('fill') : '#cccccc';
-                            hideAllToolbarPalettes(); // Hide palette only when dragging from toolbar
-                        } else if (target.classList.contains('workspace-shape')) {
-                            const svg = target.querySelector('svg');
-                            startColor = svg ? svg.getAttribute('fill') : '#cccccc';
+                        target.classList.add('dragging'); // Add visual style for dragging
+                        target.style.zIndex = 1000; // Bring dragged item to front
+
+                        // Store the initial fill color of the SVG in the interaction data
+                        let startColor = '#cccccc'; // Default color
+                        const svg = target.querySelector('svg');
+                        if (svg) {
+                            startColor = svg.getAttribute('fill') || '#cccccc';
                         }
-                        event.interaction.data = { startColor: startColor };
-                        target.style.opacity = '0.7';
+                        event.interaction.data = { startColor: startColor }; // Store color for drop zones
+
+                        // Hide color palettes when dragging from toolbar
+                        if (target.classList.contains('toolbar-shape')) {
+                             hideAllToolbarPalettes();
+                        }
+                        target.style.opacity = 0.7; // Make slightly transparent
+
+                        // Store initial position for potential snapping back
+                        if (target.classList.contains('toolbar-shape')) {
+                           // For toolbar shapes, position is relative to toolbar, use 0,0 as start for transform
+                           dragStartPosition = { x: 0, y: 0 };
+                           target.setAttribute('data-start-x', '0');
+                           target.setAttribute('data-start-y', '0');
+                        } else { // Workspace shape
+                           // For workspace shapes, position is absolute based on style.left/top
+                           dragStartPosition = { x: parseFloat(target.style.left || 0), y: parseFloat(target.style.top || 0) };
+                           target.setAttribute('data-start-x', dragStartPosition.x);
+                           target.setAttribute('data-start-y', dragStartPosition.y);
+                        }
+                         // Initialize data-x/data-y used during move, starting from the stored initial position
+                         target.setAttribute('data-x', dragStartPosition.x);
+                         target.setAttribute('data-y', dragStartPosition.y);
                     },
                     move(event) {
                         const target = event.target;
+                        // Update position based on drag movement (dx, dy)
                         const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
                         const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
-                        // For workspace shapes, use transform. For toolbar, use data attributes.
-                        if (target.classList.contains('workspace-shape')) {
-                             target.style.transform = `translate(${x - parseFloat(target.style.left || 0)}px, ${y - parseFloat(target.style.top || 0)}px)`;
-                        } else {
-                             target.style.transform = `translate(${x}px, ${y}px)`;
-                        }
-                        target.setAttribute('data-x', x); target.setAttribute('data-y', y);
+
+                        // Apply position using transform for smooth visual feedback during drag
+                        // Calculate transform relative to the element's *original* position (style.left/top or 0,0 for toolbar)
+                        const startX = parseFloat(target.getAttribute('data-start-x')) || 0;
+                        const startY = parseFloat(target.getAttribute('data-start-y')) || 0;
+                        target.style.transform = `translate(${x - startX}px, ${y - startY}px)`;
+
+                        // Update data attributes to track current logical position
+                        target.setAttribute('data-x', x);
+                        target.setAttribute('data-y', y);
                     },
                     end(event) {
                         const target = event.target;
-                        target.classList.remove('dragging');
-                        target.style.opacity = '1';
-                        target.style.zIndex = target.classList.contains('workspace-shape') ? '5' : '1'; // Reset z-index
+                        target.classList.remove('dragging'); // Remove dragging style
+                        target.style.opacity = 1; // Restore opacity
+                        target.style.zIndex = target.classList.contains('workspace-shape') && target.classList.contains('selected') ? 20 : (target.classList.contains('workspace-shape') ? 5 : 1); // Reset z-index
 
-                        // Reset position only if NOT dropped on a pattern slot
-                        if (!event.relatedTarget || !event.relatedTarget.classList.contains('pattern-slot')) {
-                            if (target.classList.contains('toolbar-shape')) {
-                                target.style.transform = 'translate(0px, 0px)';
-                                target.setAttribute('data-x', 0); target.setAttribute('data-y', 0);
-                            } else if (target.classList.contains('workspace-shape')) {
-                                // Snap back workspace shapes to their original position
-                                const finalX = parseFloat(target.style.left || 0);
-                                const finalY = parseFloat(target.style.top || 0);
-                                target.style.transform = 'translate(0, 0)';
-                                target.setAttribute('data-x', finalX);
+                        const successDrop = event.relatedTarget && event.relatedTarget.classList.contains('dropzone');
+
+                        if (target.classList.contains('toolbar-shape')) {
+                            // Always reset toolbar shape transform
+                            target.style.transform = 'translate(0px, 0px)';
+                            target.removeAttribute('data-x'); // Clear drag position data
+                            target.removeAttribute('data-y');
+                            target.removeAttribute('data-start-x');
+                            target.removeAttribute('data-start-y');
+                        } else if (target.classList.contains('workspace-shape')) {
+                            // Get the final logical position from data attributes
+                            const finalX = parseFloat(target.getAttribute('data-x')) || dragStartPosition.x;
+                            const finalY = parseFloat(target.getAttribute('data-y')) || dragStartPosition.y;
+
+                            if (successDrop && event.relatedTarget.id === 'workspace-area') {
+                                // If dropped successfully onto the workspace (i.e., moved), update style.left/top
+                                target.style.left = `${finalX}px`;
+                                target.style.top = `${finalY}px`;
+                                target.setAttribute('data-x', finalX); // Update data-x/y to final position
                                 target.setAttribute('data-y', finalY);
+                            } else {
+                                // If dropped onto pattern bar OR drop failed, snap back to original position
+                                target.style.left = `${dragStartPosition.x}px`;
+                                target.style.top = `${dragStartPosition.y}px`;
+                                target.setAttribute('data-x', dragStartPosition.x); // Reset data-x/y
+                                target.setAttribute('data-y', dragStartPosition.y);
                             }
-                        } else {
-                             // If dropped on pattern slot, workspace shape still snaps back
-                             if (target.classList.contains('workspace-shape')) {
-                                const finalX = parseFloat(target.style.left || 0);
-                                const finalY = parseFloat(target.style.top || 0);
-                                target.style.transform = 'translate(0, 0)';
-                                target.setAttribute('data-x', finalX);
-                                target.setAttribute('data-y', finalY);
-                            }
+                            // Reset transform in all cases for workspace shapes after drag end
+                            target.style.transform = 'translate(0, 0)';
+                            target.removeAttribute('data-start-x');
+                            target.removeAttribute('data-start-y');
                         }
                     }
                 },
-                modifiers: [ interact.modifiers.restrictRect({ restriction: 'body', endOnly: true }) ]
+                modifiers: [
+                    // Restrict dragging within the body bounds
+                    interact.modifiers.restrictRect({
+                        restriction: 'body',
+                        endOnly: true // Apply restriction only when drag ends
+                    })
+                ]
             });
 
+        /**
+         * Dropzone setup for the main workspace area.
+         * Accepts only toolbar shapes to create new shapes on the workspace.
+         */
         interact('#workspace-area').dropzone({
-            accept: '.toolbar-shape', // Only accept shapes from the toolbar
-            overlap: 0.5,
+            accept: '.toolbar-shape', // Only accept shapes directly from the toolbar
+            overlap: 0.1, // Require slight overlap to trigger drop
+            // Dropzone active/inactive visual feedback
             ondropactivate: (e) => e.target.classList.add('drop-active'),
+            ondropdeactivate: (e) => { e.target.classList.remove('drop-active'); e.target.classList.remove('drop-target'); },
+            // Drag enter/leave visual feedback
             ondragenter: (e) => { e.target.classList.add('drop-target'); e.relatedTarget.style.borderColor = '#34d399'; },
             ondragleave: (e) => { e.target.classList.remove('drop-target'); e.relatedTarget.style.borderColor = ''; },
+            // Action on successful drop
             ondrop: (event) => {
-                const draggableElement = event.relatedTarget;
+                const draggableElement = event.relatedTarget; // The toolbar shape being dropped
+                const dropzoneElement = event.target; // The workspace area
+                // Create a new shape on the workspace at the drop coordinates
                 createWorkspaceShape(
-                    draggableElement.dataset.shapeType, event.dragEvent.client.x, event.dragEvent.client.y,
-                    event.target, event.interaction.data.startColor
+                    draggableElement.dataset.shapeType, // Get shape type
+                    event.dragEvent.client.x, // Use viewport coordinates for drop position
+                    event.dragEvent.client.y,
+                    dropzoneElement,
+                    event.interaction.data.startColor // Get color stored during drag start
                 );
-                // Toolbar shape position is reset in its drag end listener
+                // Toolbar shape position is reset in its own drag 'end' listener
             },
-            ondropdeactivate: (e) => { e.target.classList.remove('drop-active'); e.target.classList.remove('drop-target'); }
         });
 
+        /**
+         * Dropzone setup for the pattern slots.
+         * Accepts both toolbar shapes and existing workspace shapes.
+         */
         interact('.pattern-slot').dropzone({
-             // *** MODIFIED: Accept both toolbar and workspace shapes ***
-             accept: '.toolbar-shape, .workspace-shape',
-             overlap: 0.5,
+             accept: '.toolbar-shape, .workspace-shape', // Accept both types
+             overlap: 0.5, // Require 50% overlap
+             // Dropzone active/inactive visual feedback
              ondropactivate: (e) => e.target.classList.add('drop-active'),
+             ondropdeactivate: (e) => { e.target.classList.remove('drop-active'); e.target.classList.remove('drop-target'); },
+             // Drag enter/leave visual feedback
              ondragenter: (e) => e.target.classList.add('drop-target'),
              ondragleave: (e) => e.target.classList.remove('drop-target'),
+             // Action on successful drop
              ondrop: (event) => {
-                 const draggableElement = event.relatedTarget;
+                 const draggableElement = event.relatedTarget; // The shape being dropped
+                 const slotElement = event.target; // The pattern slot
                  let shapeType = draggableElement.dataset.shapeType;
-                 let color = '#cccccc'; // Default color
+                 // Get color from the interaction data (set during drag start)
+                 let color = event.interaction.data.startColor || '#cccccc';
 
-                 // Get color based on source
-                 if (draggableElement.classList.contains('toolbar-shape') || draggableElement.classList.contains('workspace-shape')) {
-                     const svg = draggableElement.querySelector('svg');
-                     color = svg ? svg.getAttribute('fill') : '#cccccc';
-                 }
+                 // Add the shape (type and color) to the pattern slot
+                 addShapeToPatternSlot( slotElement, shapeType, color );
 
-                 addShapeToPatternSlot( event.target, shapeType, color );
-
-                 // Reset toolbar shape position if dragged from there
-                 if (draggableElement.classList.contains('toolbar-shape')) {
-                     draggableElement.style.transform = 'translate(0px, 0px)';
-                     draggableElement.setAttribute('data-x', 0); draggableElement.setAttribute('data-y', 0);
-                 }
-                 // Workspace shapes snap back automatically in their drag end listener
+                 // Toolbar shapes reset position in their 'end' listener.
+                 // Workspace shapes also reset/snap back in their 'end' listener.
              },
-             ondropdeactivate: (e) => { e.target.classList.remove('drop-active'); e.target.classList.remove('drop-target'); }
         });
 
         // --- Workspace Shape Management ---
-        function createWorkspaceShape(shapeType, dropX, dropY, container, initialColor = '#cccccc') {
-            const containerRect = container.getBoundingClientRect();
-            const shapeElement = document.createElement('div');
-            shapeElement.id = `shape-${shapeCounter++}`;
-            // *** MODIFIED: Add 'draggable' class to workspace shapes ***
-            shapeElement.classList.add('workspace-shape', 'draggable');
-            shapeElement.dataset.shapeType = shapeType;
 
+        /**
+         * Creates a new shape element on the workspace.
+         * @param {string} shapeType - Type of shape (e.g., 'square', 'circle').
+         * @param {number} dropX - Viewport X coordinate of the drop.
+         * @param {number} dropY - Viewport Y coordinate of the drop.
+         * @param {HTMLElement} container - The workspace element.
+         * @param {string} [initialColor='#cccccc'] - The fill color for the shape.
+         */
+        function createWorkspaceShape(shapeType, dropX, dropY, container, initialColor = '#cccccc') {
+            const containerRect = container.getBoundingClientRect(); // Get workspace dimensions and position
+            const shapeElement = document.createElement('div');
+            shapeElement.id = `shape-${shapeCounter++}`; // Assign unique ID
+            shapeElement.classList.add('workspace-shape', 'draggable'); // Add necessary classes
+            shapeElement.dataset.shapeType = shapeType; // Store shape type
+
+            // Set initial dimensions (can be adjusted later)
             let initialWidth = 100; let initialHeight = 100;
             if (shapeType === 'rectangle') initialWidth = 120;
             if (shapeType === 'triangle') initialHeight = 90;
-            if (shapeType === 'circle') initialWidth = initialHeight = 100;
+            if (shapeType === 'circle') initialWidth = initialHeight = 100; // Ensure circle starts square
 
-            shapeElement.style.width = `${initialWidth}px`; shapeElement.style.height = `${initialHeight}px`;
+            shapeElement.style.width = `${initialWidth}px`;
+            shapeElement.style.height = `${initialHeight}px`;
 
+            // Calculate initial top-left position relative to the workspace container,
+            // centering the shape under the drop point.
             let x = dropX - containerRect.left - (initialWidth / 2);
             let y = dropY - containerRect.top - (initialHeight / 2);
+
+            // Ensure the shape stays within the workspace bounds
             x = Math.max(0, Math.min(x, containerRect.width - initialWidth));
             y = Math.max(0, Math.min(y, containerRect.height - initialHeight));
 
-            shapeElement.style.left = `${x}px`; shapeElement.style.top = `${y}px`;
-            shapeElement.style.transform = 'translate(0, 0)';
-            shapeElement.setAttribute('data-x', x); shapeElement.setAttribute('data-y', y);
+            // Set initial position using style.left and style.top
+            shapeElement.style.left = `${x}px`;
+            shapeElement.style.top = `${y}px`;
+            shapeElement.style.transform = 'translate(0, 0)'; // Initialize transform
+            shapeElement.setAttribute('data-x', x); // Store initial position in data attributes
+            shapeElement.setAttribute('data-y', y);
 
+            // Clone the SVG from the corresponding toolbar shape
             const toolbarShape = shapeToolbar.querySelector(`.toolbar-shape[data-shape-type="${shapeType}"]`);
             if (toolbarShape && toolbarShape.querySelector('svg')) {
                  const svgClone = toolbarShape.querySelector('svg').cloneNode(true);
-                 svgClone.setAttribute('fill', initialColor); // Use color from toolbar drag
+                 svgClone.setAttribute('fill', initialColor); // Apply the specified color
                  shapeElement.appendChild(svgClone);
             }
 
-             addResizeHandles(shapeElement);
-             container.appendChild(shapeElement);
-             makeShapeInteractive(shapeElement);
-             selectShape(shapeElement);
+             addResizeHandles(shapeElement); // Add resize handles to the shape
+             container.appendChild(shapeElement); // Add the shape to the workspace
+             makeShapeInteractive(shapeElement); // Enable dragging and resizing for the new shape
+             selectShape(shapeElement); // Select the newly created shape
         }
 
+        /**
+         * Adds resize handle elements to a workspace shape.
+         * @param {HTMLElement} shapeElement - The workspace shape element.
+         */
         function addResizeHandles(shapeElement) {
              const handles = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'bottom', 'left', 'right'];
              handles.forEach(pos => {
+                 // Avoid duplicating handles if they already exist
                  if (shapeElement.querySelector(`.resize-handle-${pos}`)) return;
                  const handle = document.createElement('div');
                  handle.classList.add('resize-handle', `resize-handle-${pos}`);
                  shapeElement.appendChild(handle);
              });
+             // Initially hide handles; they become visible when shape is selected
+             shapeElement.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'none');
         }
 
+        /**
+         * Updates the dimensions of a shape element, applying constraints (min size, aspect ratio).
+         * @param {HTMLElement} shapeElement - The shape element being resized.
+         * @param {number} newWidth - The proposed new width.
+         * @param {number} newHeight - The proposed new height.
+         */
         function updateShapeDimensions(shapeElement, newWidth, newHeight) {
             const shapeType = shapeElement.dataset.shapeType;
-            let w = Math.max(20, newWidth); let h = Math.max(20, newHeight);
-            if (shapeType === 'square' || shapeType === 'circle') { w = h = Math.max(w, h); }
-            shapeElement.style.width = `${w}px`; shapeElement.style.height = `${h}px`;
-            shapeElement.dataset.rawWidth = w; shapeElement.dataset.rawHeight = h;
+            const minSize = 20; // Minimum width/height
+            let w = Math.max(minSize, newWidth);
+            let h = Math.max(minSize, newHeight);
+
+            // Maintain aspect ratio for squares and circles during resize
+            if (shapeType === 'square' || shapeType === 'circle') {
+                w = h = Math.max(w, h); // Use the larger dimension for both sides
+            }
+
+            // Apply the constrained dimensions
+            shapeElement.style.width = `${w}px`;
+            shapeElement.style.height = `${h}px`;
+
+            // Store raw dimensions (optional, could be useful for calculations)
+            shapeElement.dataset.rawWidth = w;
+            shapeElement.dataset.rawHeight = h;
         }
 
 
+        /**
+         * Sets up InteractJS resizable and tap listeners for a workspace shape.
+         * Dragging is handled by the global '.draggable' setup.
+         * @param {HTMLElement} element - The workspace shape element.
+         */
         function makeShapeInteractive(element) {
-            // Draggable logic is now handled by the main '.draggable' interact setup
             interact(element)
-                .resizable({ // Keep resizable specific to workspace shapes
-                    edges: { left: true, right: true, bottom: true, top: true },
+                .resizable({ // Enable resizing
+                    edges: { left: true, right: true, bottom: true, top: true }, // Allow resizing from all edges/corners
                     listeners: {
-                        start: (e) => selectShape(e.target),
+                        start: (e) => {
+                            selectShape(e.target); // Select the shape when resize starts
+                            // Store current position in data attributes if not already there
+                            if (!e.target.hasAttribute('data-x')) e.target.setAttribute('data-x', parseFloat(e.target.style.left || 0));
+                            if (!e.target.hasAttribute('data-y')) e.target.setAttribute('data-y', parseFloat(e.target.style.top || 0));
+                        },
                         move: function (event) {
-                            let { x, y } = event.target.dataset; x = (parseFloat(x) || 0); y = (parseFloat(y) || 0);
-                            const newW = event.rect.width; const newH = event.rect.height;
-                            Object.assign(event.target.style, { width: `${newW}px`, height: `${newH}px` });
-                             x += event.deltaRect.left; y += event.deltaRect.top;
-                             event.target.style.transform = `translate(${x - parseFloat(event.target.style.left || 0)}px, ${y - parseFloat(event.target.style.top || 0)}px)`;
-                             event.target.setAttribute('data-x', x); event.target.setAttribute('data-y', y);
-                             updateShapeDimensions(event.target, newW, newH);
+                            let target = event.target;
+                            // Get current position from data attributes (updated by drag/resize)
+                            let x = parseFloat(target.getAttribute('data-x')) || 0;
+                            let y = parseFloat(target.getAttribute('data-y')) || 0;
+
+                            // Get the new dimensions from the resize event
+                            let newW = event.rect.width;
+                            let newH = event.rect.height;
+
+                            // Apply constraints (min size, aspect ratio) BEFORE calculating position change
+                            updateShapeDimensions(target, newW, newH);
+
+                            // Adjust position based on how the rectangle changed (deltaRect)
+                            // This keeps the opposite edge/corner stationary during resize
+                            x += event.deltaRect.left;
+                            y += event.deltaRect.top;
+
+                            // Apply the position adjustment using transform for smooth visuals during resize
+                            target.style.transform = `translate(${x - parseFloat(target.style.left || 0)}px, ${y - parseFloat(target.style.top || 0)}px)`;
+
+                            // Update data attributes with the new logical position
+                            target.setAttribute('data-x', x);
+                            target.setAttribute('data-y', y);
                         },
                         end(event) {
-                             const target = event.target; const finalX = parseFloat(target.getAttribute('data-x')) || 0; const finalY = parseFloat(target.getAttribute('data-y')) || 0;
-                             target.style.left = `${finalX}px`; target.style.top = `${finalY}px`; target.style.transform = 'translate(0, 0)';
+                             const target = event.target;
+                             // Final position is stored in data-x/y after resize move
+                             const finalX = parseFloat(target.getAttribute('data-x')) || 0;
+                             const finalY = parseFloat(target.getAttribute('data-y')) || 0;
+
+                             // Apply final position to style.left/top
+                             target.style.left = `${finalX}px`;
+                             target.style.top = `${finalY}px`;
+                             // Reset transform after resize is complete
+                             target.style.transform = 'translate(0, 0)';
+
+                             // Ensure dimensions are finalized (especially for aspect ratio constraints)
                              updateShapeDimensions(target, target.offsetWidth, target.offsetHeight);
                         }
                     },
-                    modifiers: [ interact.modifiers.restrictEdges({ outer: 'parent' }), interact.modifiers.restrictSize({ min: { width: 20, height: 20 } }) ],
-                    inertia: false
+                    modifiers: [
+                        // Keep the edges inside the parent workspace
+                        interact.modifiers.restrictEdges({ outer: 'parent' }),
+                        // Enforce minimum size
+                        interact.modifiers.restrictSize({ min: { width: 20, height: 20 } })
+                    ],
+                    inertia: false // Disable inertia for resizing
                 })
-                .on('tap', (e) => { selectShape(e.currentTarget); e.stopPropagation(); });
+                .on('tap', (e) => { // Select the shape on tap
+                    selectShape(e.currentTarget);
+                    e.stopPropagation(); // Prevent workspace click from deselecting immediately
+                });
         }
 
+        /**
+         * Selects a workspace shape, deselecting any previously selected one.
+         * Updates UI (border, handles, calculator).
+         * @param {HTMLElement} shapeElement - The workspace shape element to select.
+         */
         function selectShape(shapeElement) {
-            if (selectedShapeElement === shapeElement) return;
+            if (selectedShapeElement === shapeElement) return; // Already selected
+
+            // Deselect previous shape if one exists
             if (selectedShapeElement) {
                 selectedShapeElement.classList.remove('selected');
+                selectedShapeElement.style.zIndex = 5; // Reset z-index
+                // Hide its resize handles
                 selectedShapeElement.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'none');
             }
+
+            // Select the new shape
             selectedShapeElement = shapeElement;
-            selectedShapeElement.classList.add('selected'); selectedShapeElement.style.zIndex = 20;
+            selectedShapeElement.classList.add('selected'); // Add selected style
+            selectedShapeElement.style.zIndex = 20; // Bring selected shape forward
+            // Show its resize handles
             selectedShapeElement.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'block');
+
+            // Update the calculator panel based on the selected shape
             const shapeType = selectedShapeElement.dataset.shapeType;
             updateCalculatorUI(shapeType);
         }
 
+        /**
+         * Deselects the currently selected workspace shape.
+         * Updates UI (border, handles, calculator).
+         */
         function deselectShape() {
             if (selectedShapeElement) {
                 selectedShapeElement.classList.remove('selected');
+                selectedShapeElement.style.zIndex = 5; // Reset z-index
                 selectedShapeElement.querySelectorAll('.resize-handle').forEach(h => h.style.display = 'none');
-                selectedShapeElement = null;
-                resetCalculatorUI();
+                selectedShapeElement = null; // Clear the reference
+                resetCalculatorUI(); // Reset calculator to default state
             }
         }
 
-        workspace.addEventListener('click', (e) => { if (e.target === workspace) { deselectShape(); hideAllToolbarPalettes(); }});
-        document.addEventListener('keydown', (e) => { if (selectedShapeElement && (e.key === 'Delete' || e.key === 'Backspace')) { selectedShapeElement.remove(); deselectShape(); } });
+        // --- Global Event Listeners ---
+
+        // Click on workspace background deselects shapes and hides palettes
+        workspace.addEventListener('click', (e) => {
+            if (e.target === workspace) { // Ensure click is directly on the workspace
+                deselectShape();
+                hideAllToolbarPalettes();
+            }
+        });
+
+        // Delete selected shape using Delete or Backspace key
+        document.addEventListener('keydown', (e) => {
+            // Check if a shape is selected and the key is Delete or Backspace
+            // Also check if the focus is not inside an input field to avoid deleting text
+            if (selectedShapeElement && (e.key === 'Delete' || e.key === 'Backspace') &&
+                !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                e.preventDefault(); // Prevent browser back navigation on Backspace
+                selectedShapeElement.remove(); // Remove the element from the DOM
+                deselectShape(); // Update selection state and UI
+            }
+        });
 
         // --- Calculator Logic ---
 
+        /**
+         * Resets the calculator panel to its initial state (no shape selected).
+         */
         function resetCalculatorUI() {
-            noShapeMessage.classList.remove('hidden'); shapeInfoSection.classList.add('hidden');
-            calculationModeSection.classList.add('hidden'); inputsCalcSection.classList.add('hidden');
-            inputsFindSection.classList.add('hidden'); solveButtonSection.classList.add('hidden');
-            formulaDisplaySection.classList.add('hidden'); resultDisplaySection.classList.add('hidden');
-            selectedShapeNameEl.textContent = "None";
-            formulaDisplayDiv.innerHTML = ''; resultDisplayDiv.innerHTML = '';
-            knownDimensionsInputsDiv.innerHTML = ''; knownMetricValueInput.value = '';
-            knownDimensionNameSelect.innerHTML = ''; knownDimensionValueInput.value = '';
+            noShapeMessage.classList.remove('hidden'); // Show the placeholder message
+            // Hide all calculator sections
+            shapeInfoSection.classList.add('hidden');
+            calculationModeSection.classList.add('hidden');
+            inputsCalcSection.classList.add('hidden');
+            inputsFindSection.classList.add('hidden');
+            solveButtonSection.classList.add('hidden');
+            formulaDisplaySection.classList.add('hidden');
+            resultDisplaySection.classList.add('hidden');
+
+            // Clear dynamic content
+            selectedShapeNameEl.textContent = getTranslate("None"); // Use translation if available
+            formulaDisplayDiv.innerHTML = '';
+            resultDisplayDiv.innerHTML = '';
+            knownDimensionsInputsDiv.innerHTML = ''; // Clear dynamically added inputs
+            knownMetricValueInput.value = '';
+            knownDimensionNameSelect.innerHTML = ''; // Clear dynamically added options
+            knownDimensionValueInput.value = '';
+            // Reset calculation mode dropdown to default (optional)
+            // calculationModeSelect.value = 'calc_area';
         }
 
+        /**
+         * Updates the calculator UI based on the selected shape type.
+         * @param {string} shapeType - The type of the selected shape.
+         */
         function updateCalculatorUI(shapeType) {
-            noShapeMessage.classList.add('hidden'); shapeInfoSection.classList.remove('hidden');
-            calculationModeSection.classList.remove('hidden'); solveButtonSection.classList.remove('hidden');
+            noShapeMessage.classList.add('hidden'); // Hide the 'no shape selected' message
+            // Show the main calculator sections
+            shapeInfoSection.classList.remove('hidden');
+            calculationModeSection.classList.remove('hidden');
+            solveButtonSection.classList.remove('hidden');
 
             const shapeDef = shapeFormulas[shapeType];
-            if (!shapeDef) { resetCalculatorUI(); return; }
+            if (!shapeDef) { // Safety check
+                console.error("Shape definition not found for:", shapeType);
+                resetCalculatorUI();
+                return;
+            }
 
+            // Display the translated name of the selected shape
             selectedShapeNameEl.textContent = getTranslate(shapeType);
+
+            // Update the rest of the UI based on the current calculation mode
              updateCalculatorModeView(shapeType);
         }
 
+         /**
+          * Updates the visibility and content of calculator input/output sections
+          * based on the selected calculation mode and shape type.
+          * @param {string} shapeType - The type of the selected shape.
+          */
          function updateCalculatorModeView(shapeType) {
-             const mode = calculationModeSelect.value;
-             inputsCalcSection.classList.add('hidden'); inputsFindSection.classList.add('hidden');
-             formulaDisplaySection.classList.add('hidden'); resultDisplaySection.classList.add('hidden');
-             formulaDisplayDiv.innerHTML = ''; resultDisplayDiv.innerHTML = '';
+              const mode = calculationModeSelect.value; // Get current mode ('calc_area', 'calc_perimeter', 'find_dimension')
 
-             if (mode === 'calc_area' || mode === 'calc_perimeter') {
-                 inputsCalcSection.classList.remove('hidden');
-                 populateKnownDimensionsInputs(shapeType, mode);
-             } else {
-                 inputsFindSection.classList.remove('hidden');
-                 populateFindDimensionInputs(shapeType);
-             }
+              // Hide all potentially dynamic sections first
+              inputsCalcSection.classList.add('hidden');
+              inputsFindSection.classList.add('hidden');
+              formulaDisplaySection.classList.add('hidden');
+              resultDisplaySection.classList.add('hidden');
+              // Clear previous results/formulas
+              formulaDisplayDiv.innerHTML = '';
+              resultDisplayDiv.innerHTML = '';
+
+              // Show the relevant input section based on the mode
+              if (mode === 'calc_area' || mode === 'calc_perimeter') {
+                  inputsCalcSection.classList.remove('hidden'); // Show 'Enter Dimensions' section
+                  populateKnownDimensionsInputs(shapeType, mode); // Populate inputs needed for area/perimeter
+              } else { // mode === 'find_dimension'
+                  inputsFindSection.classList.remove('hidden'); // Show 'Find Missing Dimension' section
+                  populateFindDimensionInputs(shapeType); // Populate inputs/options needed for finding dimension
+              }
          }
 
+         /**
+          * Populates the input fields required for calculating area or perimeter.
+          * @param {string} shapeType - The type of the selected shape.
+          * @param {string} mode - 'calc_area' or 'calc_perimeter'.
+          */
          function populateKnownDimensionsInputs(shapeType, mode) {
-             knownDimensionsInputsDiv.innerHTML = ''; const shapeDef = shapeFormulas[shapeType]; if (!shapeDef) return;
-             let relevantDims = [];
-             if (mode === 'calc_area') {
-                 if (shapeType === 'square') relevantDims = ['side'];
-                 else if (shapeType === 'rectangle') relevantDims = ['length', 'width'];
-                 else if (shapeType === 'circle') relevantDims = ['radius'];
-                 else if (shapeType === 'triangle') relevantDims = ['base', 'height'];
-                 else if (shapeType === 'rhombus') relevantDims = ['diagonal1', 'diagonal2'];
-                 else if (shapeType === 'parallelogram') relevantDims = ['base', 'height'];
-                 else if (shapeType === 'trapezoid') relevantDims = ['baseA', 'baseB', 'height'];
-             } else if (mode === 'calc_perimeter') {
-                 if (shapeType === 'square' || shapeType === 'rhombus') relevantDims = ['side'];
-                 else if (shapeType === 'rectangle') relevantDims = ['length', 'width'];
-                 else if (shapeType === 'circle') relevantDims = ['radius'];
-                 else if (shapeType === 'triangle') relevantDims = ['sideA', 'sideB', 'sideC'];
-                 else if (shapeType === 'parallelogram') relevantDims = ['sideA', 'sideB'];
-                 else if (shapeType === 'trapezoid') relevantDims = ['baseA', 'baseB', 'sideC', 'sideD'];
-             }
-             relevantDims.forEach(dimKey => {
-                 const label = document.createElement('label'); label.htmlFor = `input-${dimKey}`; label.textContent = getTranslate(dimKey) + ':';
-                 const input = document.createElement('input'); input.type = 'number'; input.id = `input-${dimKey}`; input.name = dimKey;
-                 input.step = "any"; input.placeholder = `e.g., ${dimKey === 'radius' ? 5 : 10}.0`;
-                 knownDimensionsInputsDiv.appendChild(label); knownDimensionsInputsDiv.appendChild(input);
-             });
+              knownDimensionsInputsDiv.innerHTML = ''; // Clear previous inputs
+              const shapeDef = shapeFormulas[shapeType];
+              if (!shapeDef) return;
+
+              let relevantDims = []; // Array to hold the keys of dimensions needed
+
+              // Determine which dimensions are required based on shape and mode
+              // This logic maps shape/mode to the necessary input fields
+              if (mode === 'calc_area') {
+                  if (shapeType === 'square') relevantDims = ['side'];
+                  else if (shapeType === 'rectangle') relevantDims = ['length', 'width'];
+                  else if (shapeType === 'circle') relevantDims = ['radius'];
+                  else if (shapeType === 'triangle') relevantDims = ['base', 'height']; // Assumes base/height known
+                  else if (shapeType === 'rhombus') relevantDims = ['diagonal1', 'diagonal2'];
+                  else if (shapeType === 'parallelogram') relevantDims = ['base', 'height'];
+                  else if (shapeType === 'trapezoid') relevantDims = ['baseA', 'baseB', 'height'];
+              } else if (mode === 'calc_perimeter') {
+                  if (shapeType === 'square' || shapeType === 'rhombus') relevantDims = ['side'];
+                  else if (shapeType === 'rectangle') relevantDims = ['length', 'width'];
+                  else if (shapeType === 'circle') relevantDims = ['radius'];
+                  else if (shapeType === 'triangle') relevantDims = ['sideA', 'sideB', 'sideC']; // Assumes all sides known
+                  else if (shapeType === 'parallelogram') relevantDims = ['sideA', 'sideB']; // Assumes adjacent sides known
+                  else if (shapeType === 'trapezoid') relevantDims = ['baseA', 'baseB', 'sideC', 'sideD']; // Assumes all sides known
+              }
+
+              // Create and append label and input elements for each relevant dimension
+              relevantDims.forEach(dimKey => {
+                  const label = document.createElement('label');
+                  label.htmlFor = `input-${dimKey}`;
+                  label.textContent = getTranslate(dimKey) + ':'; // Use translated dimension name
+
+                  const input = document.createElement('input');
+                  input.type = 'number';
+                  input.id = `input-${dimKey}`;
+                  input.name = dimKey; // Use the key as the input name for easy identification
+                  input.step = "any"; // Allow decimal inputs
+                  input.placeholder = `e.g., ${dimKey === 'radius' ? 5 : 10}.0`; // Provide an example
+
+                  knownDimensionsInputsDiv.appendChild(label);
+                  knownDimensionsInputsDiv.appendChild(input);
+              });
          }
 
+         /**
+          * Populates the input fields and dropdowns for the 'Find Missing Dimension' mode.
+          * @param {string} shapeType - The type of the selected shape.
+          */
          function populateFindDimensionInputs(shapeType) {
-             knownDimensionNameSelect.innerHTML = ''; const shapeDef = shapeFormulas[shapeType]; if (!shapeDef) return;
-             const metric = knownMetricSelect.value; let options = [];
-             if (metric === 'area') {
-                 if (shapeType === 'rectangle') options = ['length', 'width'];
-                 else if (shapeType === 'triangle') options = ['base', 'height'];
-                 else if (shapeType === 'rhombus') options = ['diagonal1', 'diagonal2'];
-                 else if (shapeType === 'parallelogram') options = ['base', 'height'];
-             } else {
-                 if (shapeType === 'rectangle') options = ['length', 'width'];
-                 else if (shapeType === 'parallelogram') options = ['sideA', 'sideB'];
-             }
-             options.forEach(dimKey => {
-                 const option = document.createElement('option'); option.value = dimKey; option.textContent = getTranslate(dimKey);
-                 knownDimensionNameSelect.appendChild(option);
-             });
-             const canFindWithoutKnownDim = (metric === 'area' && (shapeType === 'square' || shapeType === 'circle')) || (metric === 'perimeter' && (shapeType === 'square' || shapeType === 'circle' || shapeType === 'rhombus'));
-             knownDimensionNameSelect.disabled = options.length === 0 && !canFindWithoutKnownDim;
-             knownDimensionValueInput.disabled = options.length === 0 && !canFindWithoutKnownDim;
-             if (knownDimensionNameSelect.disabled) knownDimensionValueInput.value = '';
+              knownDimensionNameSelect.innerHTML = ''; // Clear previous options
+              const shapeDef = shapeFormulas[shapeType];
+              if (!shapeDef || !shapeDef.findDim) { // Check if findDim is supported
+                  knownDimensionNameSelect.disabled = true;
+                  knownDimensionValueInput.disabled = true;
+                  knownDimensionValueInput.value = '';
+                  // Optionally show a message indicating it's not supported
+                  return;
+              }
+
+              const metric = knownMetricSelect.value; // 'area' or 'perimeter'
+              let options = []; // Dimensions that can potentially be found
+
+              // Determine which dimensions can be found based on the known metric and *one* other known dimension
+              // This logic depends on the inverse formulas defined in shapeDef.findDim
+              if (metric === 'area') {
+                  // For these shapes, knowing area and one dimension allows finding the other
+                  if (['rectangle', 'triangle', 'rhombus', 'parallelogram'].includes(shapeType)) {
+                      options = shapeFormulas[shapeType].dims.filter(d => d !== 'side' && d !== 'sideA' && d !== 'sideB' && d !== 'sideC' && d !== 'sideD'); // Filter out side lengths usually not used for area calc
+                      if(shapeType === 'triangle') options = ['base', 'height']; // Specific for triangle area
+                      if(shapeType === 'rhombus') options = ['diagonal1', 'diagonal2']; // Specific for rhombus area
+                      if(shapeType === 'parallelogram') options = ['base', 'height']; // Specific for parallelogram area
+
+                  }
+                  // For square/circle, the dimension can be found directly from area (no other known dim needed)
+              } else { // metric === 'perimeter'
+                  // For these shapes, knowing perimeter and one side allows finding the other adjacent side
+                  if (['rectangle', 'parallelogram'].includes(shapeType)) {
+                      options = shapeFormulas[shapeType].dims.filter(d => d === 'length' || d === 'width' || d === 'sideA' || d === 'sideB');
+                       if(shapeType === 'parallelogram') options = ['sideA', 'sideB']; // Specific for parallelogram perimeter
+                  }
+                  // For square/circle/rhombus, the dimension (side/radius) can be found directly from perimeter
+              }
+
+              // Populate the dropdown for selecting the *known* dimension
+              options.forEach(dimKey => {
+                  const option = document.createElement('option');
+                  option.value = dimKey;
+                  option.textContent = getTranslate(dimKey); // Use translated name
+                  knownDimensionNameSelect.appendChild(option);
+              });
+
+              // Enable/disable the "Known Dimension" fields based on whether they are needed
+              // They are needed if 'options' has items (i.e., finding the missing dim requires another known dim)
+              const needsKnownDim = options.length > 0;
+              knownDimensionNameSelect.disabled = !needsKnownDim;
+              knownDimensionValueInput.disabled = !needsKnownDim;
+              // Clear the value if the input is disabled
+              if (!needsKnownDim) {
+                  knownDimensionValueInput.value = '';
+              }
          }
 
 
-         knownMetricSelect.addEventListener('change', () => { if (selectedShapeElement) populateFindDimensionInputs(selectedShapeElement.dataset.shapeType); });
-         calculationModeSelect.addEventListener('change', () => { if (selectedShapeElement) updateCalculatorModeView(selectedShapeElement.dataset.shapeType); });
+         // --- Calculator Event Listeners ---
 
-        function formatCalcSteps(formulaStr, inputDims) {
+         // Update the 'Find Dimension' inputs when the known metric (Area/Perimeter) changes
+         knownMetricSelect.addEventListener('change', () => {
+             if (selectedShapeElement) {
+                 populateFindDimensionInputs(selectedShapeElement.dataset.shapeType);
+             }
+         });
+
+         // Update the entire calculator view when the calculation mode changes
+         calculationModeSelect.addEventListener('change', () => {
+             if (selectedShapeElement) {
+                 updateCalculatorModeView(selectedShapeElement.dataset.shapeType);
+             }
+         });
+
+        /**
+         * Formats the calculation steps string by replacing placeholders with values.
+         * @param {string} formulaStr - The formula string with placeholders (e.g., "A = length * width").
+         * @param {object} inputDims - Object containing dimension keys and their numeric values.
+         * @returns {string} Formatted string showing the calculation steps.
+         */
+        function formatCalcStepsDisplay(formulaStr, inputDims) {
              let steps = formulaStr;
-             for (const key in inputDims) { const regex = new RegExp(`\\b${key}\\b`, 'g'); steps = steps.replace(regex, inputDims[key]); }
-             steps = steps.replace(/π/g, '3.14159...'); steps = steps.replace(/\*/g, multiplySymbol);
+             // Replace dimension names (translated) with their numeric values
+             for (const key in inputDims) {
+                 // Use regex for whole word replacement based on translated key
+                 const translatedKey = getTranslate(key, currentLang);
+                 // Escape special characters in the key for regex, handle potential symbols
+                 const escapedKey = translatedKey.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                 const regex = new RegExp(`\\b${escapedKey}\\b`, 'g');
+                 steps = steps.replace(regex, formatNumber(inputDims[key]));
+             }
+             // Replace mathematical symbols for better display
+             steps = steps.replace(/π/g, '3.14159...'); // Use approximation for Pi
+             steps = steps.replace(/\*/g, multiplySymbol); // Use '×' symbol
+             // Handle exponents if present (simple case for square)
+             steps = steps.replace(/\^2/g, '²');
+             // Add more replacements if needed (e.g., sqrt symbol)
+
              return steps;
         }
 
+        // --- Solve Button Click Handler ---
         solveButton.addEventListener('click', () => {
-            if (!selectedShapeElement) { showFeedback('selectShapeFirst', 'error'); return; }
-            const shapeType = selectedShapeElement.dataset.shapeType; const shapeDef = shapeFormulas[shapeType]; const mode = calculationModeSelect.value;
-            formulaDisplaySection.classList.remove('hidden'); resultDisplaySection.classList.remove('hidden');
-            formulaDisplayDiv.innerHTML = ''; resultDisplayDiv.innerHTML = '';
+            if (!selectedShapeElement) {
+                showFeedback('selectShapeFirst', 'error'); // Remind user to select a shape
+                return;
+            }
 
+            const shapeType = selectedShapeElement.dataset.shapeType;
+            const shapeDef = shapeFormulas[shapeType];
+            const mode = calculationModeSelect.value;
+
+            // Show result sections and clear previous content
+            formulaDisplaySection.classList.remove('hidden');
+            resultDisplaySection.classList.remove('hidden');
+            formulaDisplayDiv.innerHTML = '';
+            resultDisplayDiv.innerHTML = '';
+
+            // --- Mode 1 & 2: Calculate Area or Perimeter ---
             if (mode === 'calc_area' || mode === 'calc_perimeter') {
-                const inputDims = {}; let hasMissingInput = false; let hasInvalidInput = false;
-                knownDimensionsInputsDiv.querySelectorAll('input').forEach(input => {
-                    const value = parseFloat(input.value); input.style.borderColor = '';
-                    if (!isNaN(value) && value > 0) { inputDims[input.name] = value; }
-                    else if (input.value.trim() === '') { hasMissingInput = true; input.style.borderColor = 'red'; }
-                    else { hasInvalidInput = true; input.style.borderColor = 'red'; }
-                });
-                if (hasMissingInput) { resultDisplayDiv.textContent = getTranslate('valueMissing'); return; }
-                if (hasInvalidInput) { resultDisplayDiv.textContent = getTranslate('invalidInput'); return; }
+                const inputDims = {}; // Object to store validated dimension values
+                let hasMissingInput = false;
+                let hasInvalidInput = false;
 
-                resultDisplayDiv.innerHTML = '';
+                // Collect and validate inputs from the 'inputs-calc' section
+                knownDimensionsInputsDiv.querySelectorAll('input').forEach(input => {
+                    const value = parseFloat(input.value);
+                    input.style.borderColor = ''; // Reset validation style
+                    if (!isNaN(value) && value > 0) { // Check if valid positive number
+                        inputDims[input.name] = value; // Store valid value
+                    } else if (input.value.trim() === '') { // Check if empty
+                        hasMissingInput = true;
+                        input.style.borderColor = 'red'; // Highlight missing input
+                    } else { // Input is present but not a valid positive number
+                        hasInvalidInput = true;
+                        input.style.borderColor = 'red'; // Highlight invalid input
+                    }
+                });
+
+                // Display error messages if validation fails
+                if (hasMissingInput) {
+                    resultDisplayDiv.textContent = getTranslate('valueMissing');
+                    return;
+                }
+                if (hasInvalidInput) {
+                    resultDisplayDiv.textContent = getTranslate('invalidInput');
+                    return;
+                }
+
+                // --- Perform Calculation ---
+                resultDisplayDiv.innerHTML = ''; // Clear previous errors/results
+                let formulaStr = '', calcStepsDisplay = '', resultVal = NaN, unit = '', resultKey = '';
 
                 if (mode === 'calc_area') {
-                    let area = NaN, areaFormulaStr = shapeDef.areaFormula(currentLang), areaCalcSteps = '';
-                    try { area = shapeDef.getArea(inputDims); if (isNaN(area)) throw new Error("NaN"); areaCalcSteps = formatCalcSteps(areaFormulaStr, inputDims) + ` = ${formatNumber(area)}`; }
-                    catch (e) { console.error("Area calc error:", e); area = NaN; }
-                    formulaDisplayDiv.innerHTML = `<p><strong>${getTranslate('areaFormula')}:</strong> ${areaFormulaStr}</p>`;
-                    resultDisplayDiv.innerHTML += `<p><strong>${getTranslate('area')}:</strong> ${isNaN(area) ? getTranslate('cannotSolve') : `${formatNumber(area)} ${getTranslate('cmSq')}`}<br><small>${isNaN(area) ? '' : `(${getTranslate('calculationSteps')} ${areaCalcSteps})`}</small></p>`;
-                } else {
-                    let perimeter = NaN, perimeterFormulaStr = shapeDef.perimeterFormula(currentLang), perimeterCalcSteps = '';
-                    try { perimeter = shapeDef.getPerimeter(inputDims); if (isNaN(perimeter)) throw new Error("NaN"); perimeterCalcSteps = formatCalcSteps(perimeterFormulaStr, inputDims) + ` = ${formatNumber(perimeter)}`; }
-                    catch (e) { console.error("Perimeter calc error:", e); perimeter = NaN; }
-                    formulaDisplayDiv.innerHTML = `<p><strong>${getTranslate('perimeterFormula')}:</strong> ${perimeterFormulaStr}</p>`;
-                    resultDisplayDiv.innerHTML += `<p><strong>${getTranslate('perimeter')}:</strong> ${isNaN(perimeter) ? getTranslate('cannotSolve') : `${formatNumber(perimeter)} ${getTranslate('cm')}`}<br><small>${isNaN(perimeter) ? '' : `(${getTranslate('calculationSteps')} ${perimeterCalcSteps})`}</small></p>`;
+                    formulaStr = shapeDef.areaFormula(currentLang); // Get the formula string
+                    unit = getTranslate('cmSq'); // Units for area
+                    resultKey = getTranslate('area'); // Key for result label
+                    try {
+                        resultVal = shapeDef.getArea(inputDims); // Calculate the area
+                        if (isNaN(resultVal)) throw new Error("Calculation resulted in NaN"); // Check for calculation errors
+                        // Format steps for display
+                        calcStepsDisplay = formatCalcStepsDisplay(formulaStr, inputDims) + ` = ${formatNumber(resultVal)}`;
+                    } catch (e) {
+                        console.error("Area calculation error:", e);
+                        resultVal = NaN; // Ensure result is NaN on error
+                    }
+                    formulaDisplayDiv.innerHTML = `<p><strong>${getTranslate('areaFormula')}:</strong> ${formulaStr}</p>`; // Display the base formula
+                    // Display the result or 'cannot solve' message
+                    resultDisplayDiv.innerHTML += `<p><strong>${resultKey}:</strong> ${isNaN(resultVal) ? getTranslate('cannotSolve') : `${formatNumber(resultVal)} ${unit}`}<br><small>${isNaN(resultVal) ? '' : `(${getTranslate('calculationSteps')} ${calcStepsDisplay})`}</small></p>`;
+
+                } else { // mode === 'calc_perimeter'
+                    formulaStr = shapeDef.perimeterFormula(currentLang); // Get the formula string
+                    unit = getTranslate('cm'); // Units for perimeter
+                    resultKey = getTranslate('perimeter'); // Key for result label
+                    try {
+                        resultVal = shapeDef.getPerimeter(inputDims); // Calculate the perimeter
+                        if (isNaN(resultVal)) throw new Error("Calculation resulted in NaN"); // Check for calculation errors
+                        // Format steps for display
+                        calcStepsDisplay = formatCalcStepsDisplay(formulaStr, inputDims) + ` = ${formatNumber(resultVal)}`;
+                    } catch (e) {
+                        console.error("Perimeter calculation error:", e);
+                        resultVal = NaN;
+                    }
+                    formulaDisplayDiv.innerHTML = `<p><strong>${getTranslate('perimeterFormula')}:</strong> ${formulaStr}</p>`; // Display the base formula
+                     // Display the result or 'cannot solve' message
+                    resultDisplayDiv.innerHTML += `<p><strong>${resultKey}:</strong> ${isNaN(resultVal) ? getTranslate('cannotSolve') : `${formatNumber(resultVal)} ${unit}`}<br><small>${isNaN(resultVal) ? '' : `(${getTranslate('calculationSteps')} ${calcStepsDisplay})`}</small></p>`;
                 }
-            } else { // find_dimension
-                const metric = knownMetricSelect.value; const metricVal = parseFloat(knownMetricValueInput.value);
-                const knownDim = knownDimensionNameSelect.value; const knownDimVal = parseFloat(knownDimensionValueInput.value);
-                if (isNaN(metricVal) || metricVal <= 0) { resultDisplayDiv.textContent = getTranslate('valueMissing'); return; }
-                if (!knownDimensionNameSelect.disabled && (isNaN(knownDimVal) || knownDimVal <= 0)) { resultDisplayDiv.textContent = getTranslate('valueMissing'); return; }
-                const formulaStr = metric === 'area' ? shapeDef.areaFormula(currentLang) : shapeDef.perimeterFormula(currentLang);
-                formulaDisplayDiv.innerHTML = `<p><strong>${getTranslate(metric === 'area' ? 'areaFormula' : 'perimeterFormula')}:</strong> ${formulaStr}</p>`;
+
+            // --- Mode 3: Find Missing Dimension ---
+            } else { // mode === 'find_dimension'
+                const metric = knownMetricSelect.value; // 'area' or 'perimeter'
+                const metricVal = parseFloat(knownMetricValueInput.value); // Value of the known metric
+                const knownDim = knownDimensionNameSelect.value; // Key of the other known dimension (if applicable)
+                // Get value of the other known dimension only if the dropdown is enabled
+                const knownDimVal = knownDimensionNameSelect.disabled ? null : parseFloat(knownDimensionValueInput.value);
+
+                // --- Validate Inputs for Find Dimension ---
+                knownMetricValueInput.style.borderColor = ''; // Reset validation styles
+                knownDimensionValueInput.style.borderColor = '';
+                let findError = false;
+                // Check known metric value
+                if (isNaN(metricVal) || metricVal <= 0) {
+                    knownMetricValueInput.style.borderColor = 'red';
+                    findError = true;
+                }
+                // Check known dimension value *only if* it's required (select is enabled)
+                if (!knownDimensionNameSelect.disabled && (isNaN(knownDimVal) || knownDimVal <= 0)) {
+                    knownDimensionValueInput.style.borderColor = 'red';
+                    findError = true;
+                }
+                // Show error and exit if validation fails
+                if (findError) {
+                    resultDisplayDiv.textContent = getTranslate('valueMissing');
+                    return;
+                }
+
+                // Display the relevant base formula (area or perimeter)
+                const baseFormulaStr = metric === 'area' ? shapeDef.areaFormula(currentLang) : shapeDef.perimeterFormula(currentLang);
+                formulaDisplayDiv.innerHTML = `<p><strong>${getTranslate(metric === 'area' ? 'areaFormula' : 'perimeterFormula')}:</strong> ${baseFormulaStr}</p>`;
+
+                // --- Attempt to find the missing dimension using the shape's findDim function ---
                 const result = shapeDef.findDim(metric, metricVal, knownDim, knownDimVal, currentLang);
-                if (result.error) { resultDisplayDiv.textContent = result.error; }
-                else {
-                     const resultText = getTranslate('missingDimensionResult').replace('{dim}', result.dim).replace('{value}', result.value).replace('{unit}', getTranslate('cm'));
-                     resultDisplayDiv.innerHTML = `<p>${resultText}</p>`;
-                     if (result.steps && result.steps.length > 0) {
-                          const formattedSteps = result.steps.map(step => step.replace(/\*/g, multiplySymbol));
-                          resultDisplayDiv.innerHTML += `<small>(${getTranslate('calculationSteps')} ${formattedSteps.join('; ')})</small>`;
-                     }
+
+                // --- Display Result or Error ---
+                if (result.error) { // If findDim returned an error message
+                    resultDisplayDiv.textContent = result.error;
+                } else { // If findDim returned the result successfully
+                    // Construct the result string using translations
+                    const resultText = getTranslate('missingDimensionResult')
+                                         .replace('{dim}', result.dim) // Name of the found dimension
+                                         .replace('{value}', result.value) // Calculated value
+                                         .replace('{unit}', getTranslate('cm')); // Unit
+                    resultDisplayDiv.innerHTML = `<p>${resultText}</p>`;
+                    // Display calculation steps if provided by findDim
+                    if (result.steps && result.steps.length > 0) {
+                         // Format steps for display (replace symbols)
+                         const formattedSteps = result.steps.map(step => step.replace(/\*/g, multiplySymbol).replace(/π/g, '3.14...').replace(/\^2/g, '²'));
+                         resultDisplayDiv.innerHTML += `<small>(${getTranslate('calculationSteps')} ${formattedSteps.join('; ')})</small>`;
+                    }
                 }
             }
         });
 
 
         // --- Pattern Logic ---
+
+        /**
+         * Adds a shape (type and color) to a specific pattern slot.
+         * @param {HTMLElement} slotElement - The pattern slot DOM element.
+         * @param {string} shapeType - The type of shape (e.g., 'square').
+         * @param {string} [color='#475569'] - The fill color of the shape.
+         */
         function addShapeToPatternSlot(slotElement, shapeType, color = '#475569') {
-            clearSlot(slotElement, false);
+            clearSlot(slotElement, false); // Clear previous content without updating sequence yet
+
+            // Find the corresponding toolbar shape to clone its SVG
             const toolbarShape = shapeToolbar.querySelector(`.toolbar-shape[data-shape-type="${shapeType}"]`);
             if (toolbarShape && toolbarShape.querySelector('svg')) {
                 const svgClone = toolbarShape.querySelector('svg').cloneNode(true);
-                svgClone.setAttribute('fill', color); // Use passed color
-                slotElement.appendChild(svgClone);
+                svgClone.setAttribute('fill', color); // *** Apply the specific color ***
+                slotElement.appendChild(svgClone); // Add SVG to the slot
             }
+
+            // Add a remove button ('x') to the slot
             const removeBtn = document.createElement('span');
-            removeBtn.classList.add('remove-btn'); removeBtn.innerHTML = '&times;';
-            removeBtn.title = `Remove ${shapeType}`;
-            removeBtn.onclick = (e) => { e.stopPropagation(); clearSlot(slotElement); showFeedback('feedbackShapeRemoved', 'success', 1500); };
-            slotElement.appendChild(removeBtn);
+            removeBtn.classList.add('remove-btn');
+            removeBtn.innerHTML = '&times;'; // Simple 'x' symbol
+            removeBtn.title = `Remove ${shapeType}`; // Tooltip for accessibility
+            // Click handler for the remove button
+            removeBtn.onclick = (e) => {
+                e.stopPropagation(); // Prevent event bubbling
+                clearSlot(slotElement); // Clear this specific slot and update sequence
+                showFeedback('feedbackShapeRemoved', 'success', 1500); // Show feedback message
+            };
+            slotElement.appendChild(removeBtn); // Add button to the slot
+
+            // *** Store both shape type and color in the slot's dataset ***
             slotElement.dataset.shapeType = shapeType;
-            updatePatternSequence();
+            slotElement.dataset.shapeColor = color; // Store the color
+
+            updatePatternSequence(); // Update the internal pattern sequence array
         }
 
+        /**
+         * Clears the content (SVG, button, data) of a pattern slot.
+         * @param {HTMLElement} slotElement - The pattern slot element to clear.
+         * @param {boolean} [updateSeq=true] - Whether to update the patternSequence array afterwards.
+         */
         function clearSlot(slotElement, updateSeq = true) {
-             slotElement.innerHTML = ''; delete slotElement.dataset.shapeType;
-             if (updateSeq) updatePatternSequence();
+             slotElement.innerHTML = ''; // Remove SVG and button
+             delete slotElement.dataset.shapeType; // Remove shape type data
+             delete slotElement.dataset.shapeColor; // *** Remove shape color data ***
+             if (updateSeq) {
+                 updatePatternSequence(); // Update sequence if requested (usually true)
+             }
         }
 
+        /**
+         * Updates the `patternSequence` array based on the current state of the pattern slots.
+         * Each item in the array is either null or an object {type, color}.
+         */
         function updatePatternSequence() {
-            patternSequence = [];
-            patternSlots.forEach(slot => patternSequence.push(slot.dataset.shapeType || null));
-            updatePatternCheckButton();
+            patternSequence = []; // Reset the sequence array
+            // Select ALL pattern slots again within this function to get the updated list
+            const currentPatternSlots = patternBar.querySelectorAll('.pattern-slot');
+            currentPatternSlots.forEach(slot => {
+                // *** If slot has both shape type and color, push an object, else push null ***
+                if (slot.dataset.shapeType && slot.dataset.shapeColor) {
+                    patternSequence.push({
+                        type: slot.dataset.shapeType,
+                        color: slot.dataset.shapeColor // Include color in the sequence item
+                    });
+                } else {
+                    patternSequence.push(null); // Represent empty slot as null
+                }
+            });
+            // console.log("Updated Pattern Sequence:", JSON.stringify(patternSequence)); // For debugging
+            updatePatternCheckButton(); // Update the enabled/disabled state of the check button
         }
 
+        /**
+         * Enables or disables the 'Check Pattern' button based on whether the pattern bar is empty.
+         */
         function updatePatternCheckButton() {
+             // Check if every item in the sequence is null (i.e., pattern bar is empty)
              const isEmpty = patternSequence.every(s => s === null);
-             checkPatternButton.disabled = isEmpty;
-             checkPatternButton.style.opacity = isEmpty ? 0.5 : 1;
-             checkPatternButton.style.cursor = isEmpty ? 'not-allowed' : 'pointer';
+             checkPatternButton.disabled = isEmpty; // Disable button if empty
+             // Adjust visual style for disabled state (handled by CSS .btn:disabled)
         }
 
+        // --- Pattern Button Event Listeners ---
+
+        /**
+         * Checks if the current sequence in the pattern bar forms a valid repeating pattern.
+         * Considers both shape type and color.
+         */
         checkPatternButton.addEventListener('click', () => {
+            // *** Filter out nulls to get the actual pattern items (objects with type and color) ***
             const currentPattern = patternSequence.filter(s => s !== null);
-            if (currentPattern.length < 2) { showFeedback('feedbackPatternIncorrect', 'error'); return; }
+
+            // Need at least two items to potentially form a repeating pattern
+            if (currentPattern.length < 2) {
+                showFeedback('feedbackPatternIncorrect', 'error');
+                return;
+            }
+
             let isRepeating = false;
+            // Iterate through possible sub-pattern lengths (from 1 up to half the total length)
             for (let len = 1; len <= Math.floor(currentPattern.length / 2); len++) {
+                // Only check lengths that divide the total pattern length evenly
                 if (currentPattern.length % len === 0) {
-                    const subPattern = currentPattern.slice(0, len); let repeats = true;
+                    const subPattern = currentPattern.slice(0, len); // The potential repeating unit
+                    let repeats = true; // Assume it repeats initially
+                    // Check subsequent segments against the first sub-pattern
                     for (let i = len; i < currentPattern.length; i += len) {
-                        if (JSON.stringify(currentPattern.slice(i, i + len)) !== JSON.stringify(subPattern)) { repeats = false; break; }
+                        const nextSegment = currentPattern.slice(i, i + len);
+                        // *** Compare segments using JSON.stringify for deep comparison of objects (type and color) ***
+                        if (JSON.stringify(nextSegment) !== JSON.stringify(subPattern)) {
+                            repeats = false; // Mismatch found
+                            break; // No need to check further for this length
+                        }
                     }
-                    if (repeats) { isRepeating = true; break; }
+                    // If all segments matched the sub-pattern
+                    if (repeats) {
+                        isRepeating = true;
+                        break; // Found a valid repeating pattern, exit the loop
+                    }
                 }
             }
+
+            // Show feedback based on whether a repeating pattern was found
             showFeedback(isRepeating ? 'feedbackPatternCorrect' : 'feedbackPatternIncorrect', isRepeating ? 'success' : 'error');
         });
 
+        /**
+         * Clears all shapes from the pattern bar.
+         */
         clearPatternButton.addEventListener('click', () => {
-             patternSlots.forEach(slot => clearSlot(slot, false)); updatePatternSequence();
+             // Select ALL pattern slots again within this function to clear the updated list
+             const currentPatternSlots = patternBar.querySelectorAll('.pattern-slot');
+             currentPatternSlots.forEach(slot => clearSlot(slot, false)); // Clear all slots without updating sequence individually
+             updatePatternSequence(); // Update sequence once after clearing all slots
         });
 
         // --- Toolbar Color Selection Logic ---
+
+        /**
+         * Populates the color palette swatches for all toolbar shapes.
+         */
         function populateAllToolbarPalettes() {
              document.querySelectorAll('.toolbar-shape-container').forEach(container => {
                  const paletteDiv = container.querySelector('.toolbar-color-palette');
-                 if (!paletteDiv) return;
-                 paletteDiv.innerHTML = '';
+                 if (!paletteDiv) return; // Skip if palette div not found
+                 paletteDiv.innerHTML = ''; // Clear existing swatches
+                 // Create a swatch for each available color
                  availableToolbarColors.forEach(color => {
                      const swatch = document.createElement('div');
                      swatch.classList.add('toolbar-color-swatch');
-                     swatch.style.backgroundColor = color; swatch.dataset.color = color;
+                     swatch.style.backgroundColor = color; // Set swatch background
+                     swatch.dataset.color = color; // Store color value on the swatch
+                     // Add click listener to handle color selection
                      swatch.addEventListener('click', handleToolbarColorChange);
-                     paletteDiv.appendChild(swatch);
+                     paletteDiv.appendChild(swatch); // Add swatch to the palette
                  });
              });
         }
 
+        /**
+         * Handles clicks on toolbar shape containers to show/hide the color palette.
+         * @param {Event} event - The click event.
+         */
         function handleToolbarShapeClick(event) {
+             // Ignore clicks originating from the color swatches themselves
              if (event.target.classList.contains('toolbar-color-swatch')) return;
-             const currentContainer = event.currentTarget; const wasActive = currentContainer.classList.contains('show-palette');
-             hideAllToolbarPalettes(); // Hide others first
-             if (!wasActive) { // Show if it wasn't active
-                 currentContainer.classList.add('show-palette');
-                 currentContainer.querySelector('.toolbar-shape').classList.add('palette-active');
+
+             const currentContainer = event.currentTarget; // The .toolbar-shape-container that was clicked
+             const wasActive = currentContainer.classList.contains('show-palette'); // Check if palette was already showing
+
+             hideAllToolbarPalettes(); // Hide any other open palettes first
+
+             // If the clicked palette wasn't already active, show it
+             if (!wasActive) {
+                 currentContainer.classList.add('show-palette'); // Show the palette div
+                 currentContainer.querySelector('.toolbar-shape').classList.add('palette-active'); // Add highlight border to shape
              }
-             event.stopPropagation();
+             // If it was active, hideAllToolbarPalettes already handled hiding it.
+             event.stopPropagation(); // Prevent the body click listener from hiding it immediately
         }
 
+        /**
+         * Handles clicks on color swatches in the toolbar palettes.
+         * Updates the fill color of the corresponding toolbar shape's SVG.
+         * @param {Event} event - The click event.
+         */
         function handleToolbarColorChange(event) {
-             const swatch = event.currentTarget; const newColor = swatch.dataset.color;
-             const container = swatch.closest('.toolbar-shape-container');
+             const swatch = event.currentTarget; // The color swatch that was clicked
+             const newColor = swatch.dataset.color; // Get the color from the swatch's data
+             const container = swatch.closest('.toolbar-shape-container'); // Find the parent container
+
              if (container) {
-                 const svg = container.querySelector('.toolbar-shape svg');
-                 if (svg) { svg.setAttribute('fill', newColor); }
-                 hideAllToolbarPalettes(); // Hide after selection
+                 const svg = container.querySelector('.toolbar-shape svg'); // Find the SVG within the container
+                 if (svg) {
+                     svg.setAttribute('fill', newColor); // Update the SVG's fill color
+                 }
+                 hideAllToolbarPalettes(); // Hide the palette after selection
              }
-             event.stopPropagation();
+             event.stopPropagation(); // Prevent the container click listener from firing
         }
 
+        /**
+         * Hides all currently visible toolbar color palettes.
+         */
         function hideAllToolbarPalettes() {
             document.querySelectorAll('.toolbar-shape-container.show-palette').forEach(container => {
-                container.classList.remove('show-palette');
-                container.querySelector('.toolbar-shape').classList.remove('palette-active');
+                container.classList.remove('show-palette'); // Hide palette div
+                container.querySelector('.toolbar-shape').classList.remove('palette-active'); // Remove border highlight
             });
         }
 
+        // --- Toolbar Event Listeners ---
+
+        // Add click listeners to each toolbar shape container to toggle its palette
         document.querySelectorAll('.toolbar-shape-container').forEach(container => {
             container.addEventListener('click', handleToolbarShapeClick);
         });
-        document.body.addEventListener('click', (event) => { if (!event.target.closest('#shape-toolbar')) { hideAllToolbarPalettes(); } });
+
+        // Add listener to the body to hide palettes when clicking anywhere outside the toolbar
+        document.body.addEventListener('click', (event) => {
+            // Check if the click target is outside the #shape-toolbar element
+            if (!event.target.closest('#shape-toolbar')) {
+                hideAllToolbarPalettes();
+            }
+        });
 
 
         // --- Initialization ---
-        langToggleButton.addEventListener('click', toggleLanguage);
-        currentLang = 'en';
-        htmlElement.lang = currentLang;
-        htmlElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-        populateAllToolbarPalettes();
-        applyTranslations(currentLang);
-        resetCalculatorUI();
-        updatePatternSequence();
+        // Function to run when the page loads
+        function initializeApp() {
+            langToggleButton.addEventListener('click', toggleLanguage); // Setup language toggle
+            currentLang = 'en'; // Set default language
+            htmlElement.lang = currentLang;
+            htmlElement.dir = 'ltr'; // Set default direction
+
+            populateAllToolbarPalettes(); // Create color swatches
+            applyTranslations(currentLang); // Apply initial translations
+            resetCalculatorUI(); // Set initial calculator state
+            updatePatternSequence(); // Initialize pattern sequence and button state
+
+            // Re-enable interact dropzone for newly added slots if necessary
+            // (InteractJS might need re-initialization if slots are added dynamically *after* initial setup)
+            // However, since we add them directly in HTML, the initial setup should catch them.
+            // If slots were added *programmatically* after load, you might need:
+            // interact('.pattern-slot').dropzone({...}); // Re-apply dropzone settings
+        }
+
+        // Run initialization code when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
 
     </script>
 
